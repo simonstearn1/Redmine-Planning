@@ -1,0 +1,28 @@
+<%#
+# To change this template, choose Tools | Templates
+# and open the template in the editor.
+%>
+<%= hidden_field_tag :project_id, @project.id %>
+<%= hidden_field_tag :user_id, @user_id %>
+<%
+  users = @project.members.collect(&:user) - [User.current] if !@project.nil?
+%>
+
+<table>
+  <tr><td><%= check_box_tag 'chb_all', 'all', false,
+        { :id => 'all_ChB', :onclick => "setAllChecked('#{@project.id}', '#{@user_id}', '#{@owner}')" } %>
+      <%= l(:label_checkbox_all) %></td>
+    <td><%= check_box_tag 'chb_none', 'none', true,
+        { :id => 'none_ChB', :onclick => "setNoneChecked(this.form)" } %>
+    <%= l(:label_checkbox_unassigned) %> </td>
+  </tr>
+
+  <% if(!users.nil? && !users.empty?)
+    i = 0;
+    while(i<users.length-1) %>
+      <tr>
+        <td><%= render :partial => 'user_checkbox', :locals => { :user => users[i] } %></td>
+        <td><%= render :partial => 'user_checkbox', :locals => { :user => users[i+1] } %></td></tr>
+      <% i += 2; end
+  end %>
+</table>

@@ -1,0 +1,64 @@
+<%#
+# To change this template, choose Tools | Templates
+# and open the template in the editor.
+%>
+<% @i = 1 if @i.nil? %>
+<tr id="row_<%= @i %>" class="<%= cycle('odd', 'even') %> <%= schedule_issue_entry.css_classes %>">
+  <td style="background: #eee">
+    <%= link_to "#" + schedule_issue_entry.id.to_s, { :controller => 'issues',
+      :action => 'show', :id => schedule_issue_entry.id.to_s },
+      { :title => h(schedule_issue_entry.description.slice(0, 126)) } %>
+  </td>
+  
+    <td class="sprint" style="display: none">
+      <% if !schedule_issue_entry.fixed_version.nil? %>
+        <%= schedule_issue_entry.fixed_version.name %>
+      <% end %>
+    </td>
+
+  <td class="subject">
+    <%= link_to h(schedule_issue_entry.subject.slice(0, 46)), { :controller => 'issues',
+      :action => 'show', :id => schedule_issue_entry.id.to_s },
+      { :title => h(schedule_issue_entry.description.slice(0, 176)) } %>
+  </td>
+
+    <td class="t_estimated">
+      <%=  schedule_issue_entry.estimated_hours%>
+    </td>
+
+    <td class="t_spent">
+      <%=  ("%0.2f" % schedule_issue_entry.spent_hours) unless schedule_issue_entry.spent_hours.nil? %>
+    </td>
+
+  <td class="logtime">
+    <select onchange="updateScheduledHours();"
+            class="hours_to_schedule_select" name="hours_to_schedule[<%= @i %>]" id="hours_to_schedule_<%= @i %>"
+            title="<%= l(:label_hours_to_schedule)%>" >
+            <% i=0; while(i < 13) %>
+               <option value="<%= i %>">
+            <%= i %>
+            <% i += 1; end %>
+    </select>
+    ,
+    <select onchange="updateScheduledHours();"
+            class="minutes_to_schedule_select" name="minutes_to_schedule[<%= @i %>]" id="minutes_to_schedule_<%= @i %>"
+            title="<%= l(:label_hours_to_schedule)%>" >
+            <% i=0; while(i < 100) %>
+               <option value="<%= i %>">
+            <%= i %>
+            <% i += 25; end %>
+    </select>
+    
+
+    <% if(!scheduled.nil? && true == scheduled) %>
+      <%  @issue_sheduled_time = ScheduledIssue.scheduledTimeByIssueAndDate(schedule_issue_entry.id, @date).to_f %>
+      <% @issue_sheduled_minutes = ((@issue_sheduled_time - @issue_sheduled_time.to_i)*100) %>
+        <%= hidden_field_tag "hours_to_schedule_value_#{@i}", @issue_sheduled_time.to_i, :class => 'hours_to_schedule_values' %>
+        <%= hidden_field_tag "minutes_to_schedule_value_#{@i}",@issue_sheduled_minutes.to_i, :class => 'minutes_to_schedule_values' %>
+    <% end %>
+
+  </td>
+
+  <%= hidden_field_tag "issues[#{@i}]", schedule_issue_entry.id %>
+  <% @i += 1 %>
+</tr>

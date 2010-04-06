@@ -1,0 +1,116 @@
+<%#
+# To change this template, choose Tools | Templates
+# and open the template in the editor.
+%>
+<% empty_hours = @emptyHours.nil? || @emptyHours == 0 ? 0 : @emptyHours.scheduled_hours.to_f %>
+<form name="schedule_form" method="post" action="" onsubmit="return false">
+  <%= hidden_field_tag 'edited', 'null' %>
+  <%= hidden_field_tag 'project_id_hiddn', @project.id %>
+  <%= hidden_field_tag 'schedule_entry_hours', @scheduleEntryHours.to_f %>
+  <%= hidden_field_tag 'user_id', @user_id.to_s, :id => 'user_id_hiddn' %>
+  <%= hidden_field_tag 'dateP', @date.to_s, :id => 'date_hiddn' %>
+  <%= hidden_field_tag 'previouslyUsed', @previouslyUsed.to_f %>
+  <%= hidden_field_tag 'warningMessage', l(:warning_to_many_scheduled_hours) %>
+  <%= hidden_field_tag 'empty_hours_message', l(:label_empty_hours_left) %>
+
+  <div id="warningSpan" style="font-weight: bold; color: #FF6666; height: 20px">
+    <%= @used.to_f + @previouslyUsed.to_f + empty_hours > @memberHours.to_f ?
+      l(:warning_to_many_scheduled_hours) : '&nbsp;' %>
+    <br></div>
+  <span id="hours_left_sp"><%= l(:label_used_today) %>:
+    <%= text_field_tag "usedHours",
+      ((@used.to_f + empty_hours.to_f) != 0 ? (@used.to_f + empty_hours.to_f) : 0),
+      :id => "usedHours", :style => "width: 25px",
+      :onblur => "updateEmptyHours()",
+      :onclick => "saveUsedHoursValue()",
+      :tabindex => "-1"
+  %></span>
+
+  <%= l(:label_used_total) %>: <span id="usedTotalSpan"><span id="usedTotal">
+    <%= @used.to_f + empty_hours.to_f + @previouslyUsed.to_f %></span>/
+    <span id="user_hours_left"><%= @memberHours.to_f %></span></span><br>
+
+  <div id="emptyHoursSpan" style="padding-top: 2px; padding-bottom: 2px">
+         <%= l(:label_empty_hours_left) %> 
+    <span id="emptyHours">
+      <% if empty_hours.to_f == 0 %>
+        <%= "0 " %>
+      <% else %>
+        <%= "#{empty_hours.to_f} " %>
+      <% end %>
+    </span><br>
+  </div>
+
+
+    <label><input id="sprintCheckbox" type="checkbox" onclick="toggleColumn('sprint');">
+    <%= l(:label_toggle_sprint) %></label>
+
+  <hr/>
+
+  <span class="header_label" onclick="showIssues('scheduledIssues')">
+    <%= l(:label_scheduled_issues) %>:</span>
+  <div id="scheduledIssues" class="issuesDiv"
+  <% if !@scheduledIssues.nil? && !@scheduledIssues.empty? %>
+         style="display: block" >
+           <%= render :partial => 'scheduled_issues_table',
+             :locals => { :issues => @scheduledIssues, :scheduled => true } %>
+         <% else %>
+      style="display: none;" >
+      <%= l(:label_no_scheduled_issues) %>.
+    <% end %>
+  </div>
+
+  <hr/>
+  <span class="header_label" onclick="showIssues('notScheduledIssues')">
+    <%= l(:label_not_scheduled_issues) %>:</span>
+  <div id="notScheduledIssues" class="issuesDiv"
+  <% if !@notScheduledIssues.nil? && !@notScheduledIssues.empty? %>
+         style="display: block">
+           <%= render :partial => 'scheduled_issues_table',
+             :locals => { :issues => @notScheduledIssues, :scheduled => false } %>
+         <% else %>
+      style="display: none">
+      <%= l(:label_no_other_issues) %>.
+    <% end %>
+  </div>
+
+  <hr/>
+  <span class="header_label" onclick="showIssues('unassignedIssuesDiv')">
+    <%= l(:label_member_issues) %>:</span>
+  <div id="unassignedIssuesDiv" class="unassignedIssuesDiv" style="display: none">
+      <div id="memberTable" class="memberTable">
+        <%= render :partial => 'member_table', :locals => { :user_id => @user_id } %>
+      </div>
+
+
+      <span id="sep-bar" class="header_label"></span>
+
+      
+      <div id="unassignedIssues" class="unasIssuesDiv">
+        <% if !@unassignedIssues.nil? && !@unassignedIssues.empty? %>
+          <%= render :partial => 'scheduled_issues_table',
+            :locals => { :issues => @unassignedIssues, :scheduled => false } %>
+        <% end %>
+      </div>
+      <span id="sep-bar" class="header_label"></span>
+  </div>
+<br/>
+
+  <%= button_to_function l(:button_save), "saveScheduledIssues(this.form)",
+    :name => 'save_issues', :id => 'saveIssues', :class => 'control_button' %>
+
+  <%= button_to_function l(:button_quick_issue),
+    @trackers_exists ? "showQuickIssue()" : "alert('#{l(:error_no_trackers)}')",
+    :id => "qiButton", :class => 'control_button' %>
+
+  <%= button_to_function l(:label_issue_new),
+    "window.location.href='/projects/#{@project.id}/issues/new?assigned_to=#{@user_id}&start_date=#{@date}'",
+    :class => 'control_button', :id => "issue_new_button", :onblur => " $('usedHours').focus();" %>
+</form>
+
+<script type="text/javascript">
+  saved_empty_hours_value = $('usedHours').value;
+  $$('body')[0].setStyle({
+    overflow: 'auto'
+  })
+</script>

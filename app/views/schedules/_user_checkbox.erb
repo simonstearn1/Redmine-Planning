@@ -1,0 +1,8 @@
+<%#
+# To change this template, choose Tools | Templates
+# and open the template in the editor.
+%>
+
+<label><%= check_box_tag "members_ids[]", user.id, false,
+    :onclick => "fetchMemberIssues(this.form, '#{@date}');  $('none_ChB').checked = false;$('all_ChB').checked = false;", :class => 'member' %>
+  <%= user %></label>

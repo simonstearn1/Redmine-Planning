@@ -1,0 +1,240 @@
+/* 
+    Document   : schedule_tickets
+    Created on : 2009-06-24, 12:20:28
+    Author     : mkluczka
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+/* 
+   TODO customize this sample style
+   Syntax recommendation http://www.w3.org/TR/REC-CSS2/
+*/
+
+.controls {
+  margin-top: 19px;
+}
+
+.control_button {
+  margin-left: 5px;
+}
+
+.divOverlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10001;
+  background: #fff;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0.02)";
+  filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0.02)";
+  opacity: 0.02;
+}
+
+.scheduled_info_link {
+  cursor: pointer;
+}
+
+* {
+  padding: 0;
+  margin: 0;
+}
+
+.quickIssueDescription {
+}
+
+.description_text {
+  color: gray;
+  font-style: italic;
+}
+
+.quickIssue {
+  position: absolute;
+  width: 220px;
+  height: auto;
+  border: 0px solid black;
+  z-index: 10012;
+  	background-color: #EFEFEF;
+	color: #000;
+		-webkit-border-bottom-left-radius: 4px;
+		-webkit-border-bottom-right-radius: 4px;
+
+		-moz-border-radius-bottomleft: 4px;
+		-moz-border-radius-bottomright: 4px;
+
+		border-bottom-left-radius: 4px;
+		border-bottom-right-radius: 4px;
+
+		-webkit-border-top-left-radius: 4px;
+		-webkit-border-top-right-radius: 4px;
+
+		-moz-border-radius-topleft: 4px;
+		-moz-border-radius-topright: 4px;
+
+		border-top-left-radius: 4px;
+		border-top-right-radius: 4px;
+
+	-webkit-box-shadow: 0 0 64px #000; 
+	-moz-box-shadow: #000 0 0 64px; 
+	box-shadow: 0 0 64px #000;
+
+}
+
+.scheduledWindow {
+  height: 130px;
+  background: #989898;
+  width: 384px;
+  font-size: 0.8em;
+}
+
+.titleBar {
+  height: 25px;
+}
+
+.scheduledTicket {
+  background: #eee none repeat scroll 0 0;
+  width: 480px;
+  z-index: 91;
+  border:1px solid #CCCCCC;
+  height:130px;
+  padding:5px;
+}
+
+.scheduledTicket hr {
+	background: transparent none repeat scroll 0 0;
+}
+
+.hours_left_input {
+  text-align:right;
+  width:28px;
+}
+
+.scheduled_issue_info {
+  border: 1px solid black;
+  font-size: 0.85em;
+  background: #eee;
+  position: absolute;
+  width: 125px;
+  height: auto;
+  left: 500px;
+  top: 50px;
+  z-index: 10002;
+}
+
+.scheduled_issues_info_visible {
+  width: 350px;
+  height: 300px;
+  border: 1px solid black;
+  background: #efefef;
+  overflow: auto;
+}
+
+.unassignedIssuesDiv {
+  height: auto;
+}
+
+.unasIssuesDiv {
+  height: 0;
+  overflow: auto;
+}
+
+.hours_to_schedule_select {
+  margin-left: 2px;
+  margin-right: 2px;
+  text-align: left;
+  width: 50px;
+}
+
+.minutes_to_schedule_select {
+  margin-left: 2px;
+  margin-right: 2px;
+  text-align: left;
+  width: 50px;
+}
+
+.issuesDiv {
+  overflow: auto;
+  height: 25px;
+}
+
+.scheduledIssuePreview {
+  width: 350px;
+  height: 350px;
+  overflow: auto;
+  background: #cfcfcf;
+  border: 1px solid black;
+}
+
+.control {
+  width: 99px;
+}
+
+tr.issue td.subject {
+  white-space: normal;
+  min-width: 175px;
+  max-width: 185px;
+}
+
+tr.issue td.sprint {
+  max-width: 85px;
+  min-width: 85px;
+  white-space: normal;
+}
+
+tr.issue td.logtime {
+  width: 60px;
+}
+
+.header_label {
+color:white;
+cursor:pointer;
+display:block;
+line-height:25px;
+margin:0 -5px;
+padding:0 5px;
+text-decoration:none;  
+background: #467AA7 repeat scroll 0 0;
+}
+
+.memberTable {
+  overflow: auto;
+  height: 65px;
+  padding-bottom: 2px;
+}
+
+#quickIssueBar{
+    position:relative !important;
+    height:15px !important;
+}
+#quickIssueBar a{
+position:absolute;
+right:2px;
+top:2px;
+float:none !important;
+}
+
+.issuesDiv {
+margin:0 -5px;
+background-color:#DDDDDD;
+}
+.memberTable {
+margin:0 -5px;
+padding:0 5px;
+background-color:#DDDDDD;
+}
+#sep-bar{
+height:3px;
+}
+input#usedHours, #scheduledTicket select{
+border:1px solid #999;
+padding:2px;
+width:43px;
+		-webkit-border-bottom-radius: 3px;
+		-moz-border-radius: 3px;
+		border-radius: 3px;
+		
+}
+#unassignedIssues {
+background-color:#DDDDDD;
+}

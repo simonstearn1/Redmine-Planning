@@ -1,0 +1,19 @@
+<%#
+# To change this template, choose Tools | Templates
+# and open the template in the editor.
+%>
+
+<table class="issueTable">
+  <tr><th>#</th>
+      <th class="sprint" style="display: none"><%= l(:label_field_sprint) %> </th>
+
+
+    <th><%= l(:field_subject) %></th>
+    <th><%= l(:label_schedules_estimated) %></th>
+    <th><%= l(:label_schedules_spent) %></th>
+    <th><%= l(:label_hours_to_select) %></th></tr>
+
+  <%= render :partial => 'schedule_issue_entry',
+    :collection => issues,
+    :locals => { :scheduled => scheduled.nil? ? nil : scheduled } %>
+</table>

@@ -1,0 +1,11 @@
+<%#
+# To change this template, choose Tools | Templates
+# and open the template in the editor.
+%>
+<% hours_value = [entry.hours.nil? ? 0 : entry.hours.to_f,
+  ScheduledIssue.hours(entry.user_id, entry.project_id, entry.date).to_f].max %>
+<%= text_field "schedule_entry", "hours", :size => 3,
+  :name => entry.form_id, :id => entry.form_id,
+  :value => hours_value.nil? || hours_value == 0 ? '' : hours_value,
+  :onclick => "scrollPos = document.viewport.getScrollOffsets(); showScheduledProjects('#{entry.form_id}', event)",
+  :readonly => true %>

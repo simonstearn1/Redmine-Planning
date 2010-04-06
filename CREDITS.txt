@@ -1,0 +1,6 @@
+Thanks go to the following people for patches and contributions:
+
+* Brad Beattie
+
+ - Project Maintainer
+* The many translators who have submitted patches

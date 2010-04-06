@@ -1,0 +1,119 @@
+<%
+@available_statuses.each do|tracker_name, statuses|
+%>
+  <select id="<%= tracker_name %>_options" style="display: none">
+    <%= options_for_select(statuses.collect {|d| [d.name, d.id]}) %>
+  </select>
+<%
+end
+%>
+<select id="default_option" style="display :none">
+  <option value="<%= @default_status.id %>"><%= @default_status.name %></option>
+</select>
+
+<div class="box" id="qibox">
+  <form id="quickIssueForm" method="post" onsubmit="return false" action="">
+    <table>
+      <%= hidden_field_tag "user_id", user_id %>
+      <tr>
+        <td>
+          <label><%= l(:field_tracker)%> </label>
+          <%= select_tag 'quick_issue[tracker]',
+            options_for_select(@trackers.collect {|t| [t.name, t.id] }),
+            :title => l(:field_tracker),
+            :onchange => "changeStatusesByTracker(this)",
+            :style => "min-width: 90px", :tabindex => 100 %>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label><%= l(:field_status) %>:
+            <%= select_tag 'quick_issue[status]',
+              @available_statuses[@first].length > 0 ? options_for_select(@available_statuses[@first].collect{|d| [d.name, d.id]}) :
+              options_for_select([@default_status].collect{|d| [d.name, d.id]}),
+              :title => l(:field_new), :style => "min-width: 75px",
+              :onchange => "quick_issue_edited = true", :tabindex => 101 %>
+        </td>
+      </tr>
+
+        <tr>
+          <td>
+            <label><%= l(:label_field_sprint) %>:</label>
+            <%= select_tag 'quick_issue[sprint]',
+              options_for_select([[l(:none), -1]] + @sprints.collect{|d|
+                [d.name.slice(0, 25), d.id]}),
+              :title => l(:label_field_sprint),
+              :onchange => "quick_issue_edited = true", :tabindex => 102 %>
+          </td>
+        </tr>
+        
+      <% if(!@assigned_to.empty?) %>
+        <tr>
+          <td>
+            <label><%= l(:field_assigned_to) %></label>
+            <%= select_tag 'quick_issue[assigned_to]',
+              options_for_select([[l(:no_one), -1]] + @assigned_to.collect{|d| [d.to_s, d.id]}, user_id.to_i),
+              :title => l(:field_assigned_to), :onchange => "quickIssueAssignedToChange();",
+              :tabindex => 103, :style => "width: 70%" %>
+          </td>
+        </tr>
+      <% end %>
+      <tr>
+        <td>
+          <label><%= l(:label_hours_to_schedule) %></label><br/>
+            <%= select_tag 'scheduled_hours',
+            options_for_select((0..12).collect{|d| [d.to_s, d]}, 0),
+            :title => l(:label_hours_to_schedule),
+            :onchange => "quick_issue_edited = true", :tabindex => 104 %>
+          <%= select_tag 'scheduled_minutes',
+            options_for_select((0..3).collect{|d| [(d*25).to_s, d*25]}, 0),
+            :title => l(:label_hours_to_schedule),
+            :onchange => "quick_issue_edited = true", :tabindex => 105 %>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label><%= l(:field_estimated_hours) %>: </label>
+          <%= number_field 'quick_issue[estimated]', '',
+            'quickIssueEstimatedHours' %>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label><%= l(:field_subject) %>: </label><br/>
+          <%= text_field_tag 'quick_issue[subject]', '', :maxlength => 255,
+            :title => l(:field_subject), :onfocus => "edited_value = this.value;",
+            :onblur => "if(edited_value != this.value) quick_issue_edited = true; edited_value = null;",
+            :style => "width: 90%",
+            :tabindex => 107 %>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label><%= l(:field_description) %>: </label>
+          <%= text_area_tag 'quick_issue[description]', '', :style => 'resize: none; width: 90%',
+            :title => l(:field_description),
+            :onfocus => "edited_value = this.value;",
+            :onblur => "if(edited_value != this.value) quick_issue_edited = true;",
+            :tabindex => 108 %>
+        </td>
+      </tr>
+
+      <tr>
+        <td><span id="saveCell"><%= button_to_function l(:button_save), "saveQuickIssue(this.form, true)",
+            :id => 'quickIssueButton', :tabindex => 109 %></span>
+          <%= button_to_function l(:button_cancel), 'gy_focus = false; cancelQuickIssue();',
+            :tabindex => 111, :id => 'cancel_qi_button' %>
+        </td>
+      </tr>
+    </table>
+  </form>
+</div>
+<script type="text/javascript">
+  Event.observe('cancel_qi_button', 'blur', function(e){
+    if($('quick_issue_tracker') != null && gy_focus)
+    {
+      $('quick_issue_tracker').focus();
+    }
+  });
+</script>

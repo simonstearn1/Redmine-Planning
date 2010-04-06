@@ -1,0 +1,96 @@
+<%= breadcrumb link_to(l(:label_schedules_index), {:controller => 'schedules',
+    :action => 'index', :date => @date, :project_id => @project}) unless @project.nil? %>
+<%= breadcrumb link_to(l(:label_schedules_index), {:controller => 'schedules',
+    :action => 'index', :date => @date, :user_id => @user.id}) unless @user.nil? %>
+<%= breadcrumb link_to(l(:label_schedules_index), {:controller => 'schedules',
+    :action => 'index', :date => @date }) unless !@project.nil? || !@user.nil? %>
+
+<%
+after_submit_href = url_for(:controller => "schedules", :action => "index",
+  :date => @date, :project_id => @project) if !@project.nil?
+after_submit_href = url_for(:controlelr => "schedules", :action => "index",
+  :date => @date, :user_id => @user.id) if !@user.nil?
+after_submit_href = url_for(:controller => "schedules", :action => "index",
+  :date => @date) unless !@project.nil? || !@user.nil?
+%>
+
+<h2>
+  <%= l(:label_schedule_edit, link_to_user(@user)) unless @user.nil? %>
+  <%= l(:label_schedule_edit, @project.to_s) unless @project.nil? %>
+  <%= l(:label_schedule_edit, "today") if @user.nil? && @project.nil? %>
+</h2>
+
+<p class="subtitle"><%= "#{l(:label_date_from)} #{format_date(@calendar.startdt)} #{l(:label_date_to).downcase} #{format_date(@calendar.enddt)}" %></p>
+
+<% form_tag({}, :id => 'date_form') do %>
+
+  <fieldset id="date-range"><legend><%= l(:label_date_range) %></legend>
+    <%= hidden_field_tag 'project_id', @project.id unless @project.nil? %>
+    <%= hidden_field_tag 'user_id', @user.id unless @user.nil? %>
+    <%= select_day(@date.day, :prefix => "day", :discard_type => true) %>
+    <%= select_month(@date.month, :prefix => "month", :discard_type => true) %>
+    <%= select_year(@date.year, :prefix => "year", :discard_type => true) %>
+  </fieldset>
+
+   <p style="float:right; margin:0px;">
+      <%= link_to_remote ("&#171; #{l(:label_previous)} #{l(:label_week).downcase}"), {:update => "content", :url => params.merge( :date => @date - 7 )} %> |
+      <%= link_to_remote ("#{l(:label_next)} #{l(:label_week).downcase} &#187;"), {:update => "content", :url => params.merge( :date => @date + 7 )} %>
+    </p>
+
+  <p class="buttons">
+    <%= link_to_remote l(:button_apply),
+      { :update => "content",
+      :with => "Form.serialize('date_form')",
+      :url => params.delete_if {|key, value| [ "date", "day", "month", "year" ].include?(key) }
+    }, :class => 'icon icon-checked' %>
+  </p>
+<% end %>
+
+<% form_tag({:action=> "edit"}) do %>
+  <div class="box">
+    <%= button_to_function l(:button_exit), "window.location.href='#{after_submit_href}'" %>
+
+  <%# check_box_tag "notify", "1"  <label for="notify"> l(:label_schedules_send_update)</label> %>
+    <%= hidden_field_tag 'date', @date %>
+    <%= hidden_field_tag 'project_id', @project.id unless @project.nil? %>
+    <%= hidden_field_tag 'user_id', @user.id unless @user.nil? %>
+    <%= render :partial => 'user', :locals => {:calendar => @calendar } unless @user.nil? %>
+    <%= render :partial => 'project', :locals => {:calendar => @calendar } unless @project.nil? %>
+  </div>
+<% end %>
+
+<div id="scheduledWindow" class="scheduledWindow" style="display: none">
+  <div id="titleBar" class="titleBar">
+    <%= button_to_function "X", "confirmHiding()", :style => "float: right" %>
+  </div>
+  <div id="scheduledTicket" class="scheduledTicket">
+  </div>
+</div>
+
+<div id="qiOverlay" style="display: none" class="divOverlay"></div>
+<div id="quickIssue" class="quickIssue" style="display: none">
+  <div id="quickIssueBar" style="height: 15px; background: #bcd; padding: 2px">
+    <%= l(:button_quick_issue) %>
+    <%#*<a href="#"  id="CloseButton"%>
+     <%#*title="Cancel" onclick="cancelQuickIssue()">%>
+       <%#= image_tag 'close.png', :plugin => 'redmine_schedules',
+         :size => '10x10', :title => "Cancel" %>
+  <%#*</a>%>
+    </div>
+  <div id="quickIssueContent"></div>
+</div>
+
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'schedules', :plugin => 'redmine_schedules' %>
+  <%= stylesheet_link_tag 'modalbox-lib', :plugin => 'redmine_schedules' %>
+  <%= stylesheet_link_tag "schedule_tickets", :plugin => 'redmine_schedules' %>
+  <%= javascript_include_tag "hours_functions", :plugin => 'redmine_schedules' %>
+  <%= javascript_include_tag "modalbox", :plugin => 'redmine_schedules' %>
+  <%= javascript_include_tag "modalbox-lib", :plugin => 'redmine_schedules' %>
+  <%= javascript_include_tag "schedule_edit", :plugin => 'redmine_schedules' %>
+  <%= javascript_include_tag "quick_issue", :plugin => 'redmine_schedules' %>
+<% end %>
+
+<% content_for :sidebar do %>
+  <%= render :partial => 'sidebar' %>
+<% end %>

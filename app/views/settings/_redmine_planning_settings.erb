@@ -1,0 +1,8 @@
+<% html_title "Redmine Planning Plugin - Basic Settings" -%>
+<p>
+  <label><%= l(:field_is_default) %> </label>
+  <%= select_tag 'settings[tracker]',
+    options_for_select( Tracker.all.collect {|is| [is.name, is.id]}, @settings['tracker'].to_i) %>
+</p>
+<p>
+

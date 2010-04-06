@@ -1,0 +1,30 @@
+<% 
+avaHours = SchedulesController.left_hours(entry.user.id, entry.date.to_s);
+schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date);
+%>
+<li class="schedule_entry" style="min-height: <%= 2.7*entry.hours %>em">
+  <div title="<%= ScheduleCompatibility::I18n.lwr(:label_f_hour, :value => entry.hours) %>"
+       style="min-height: <%= 2.7*entry.hours - 1.7 %>em; <%= entry.style(@user.nil? ? entry.user.id : entry.project.id) %>">
+         <%= link_to entry.project, :controller => 'schedules', :action => 'index',
+           :date => entry.date, :project_id => entry.project if @project.nil?%>
+    <br/>
+    <% if !@user.nil? && avaHours > 0 %>
+      <label><%= l(:label_available_hours) %>: </label><%= avaHours.to_f.to_s %><br/>
+    <% end %>
+
+    <% if schedHours > 0 %>
+      <br/>
+      <label><%= l(:label_scheduled_hours) %>: </label><%= schedHours.to_f %><br/>
+      <% if !ScheduledIssue.notEmpty?(entry.user.id, entry.project.id, entry.date) %>
+      <span id="scheduled_info_link" class="scheduled_info_link" style="text-decoration: underline; color: blue; cursor: pointer"
+            onclick="scheduledIssuesInfo('<%= entry.date %>', '<%= entry.user.id %>', '<%= entry.project.id %>', event)">
+        <%= l(:label_assigned_issues)%> </span>
+      <% else %> <%=  l(:info_no_scheduled_issues) %> <% end %>
+      <br/>
+    <% end %>
+
+    <%= "<br/>" if @project.nil? && @user.nil? %>
+    <%= link_to entry.user, :controller => 'schedules', :action => 'index',
+      :date => entry.date, :user_id => entry.user.id if @user.nil? %>
+  </div>
+</li>
