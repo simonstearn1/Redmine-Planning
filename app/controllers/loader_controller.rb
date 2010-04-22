@@ -88,6 +88,7 @@ class LoaderController < ApplicationController
     else
       
       # No file was specified. If there are no tasks either, complain.
+      # TODO: locales...
       
       tasks = params[ :import ][ :tasks ]
       
@@ -152,12 +153,18 @@ class LoaderController < ApplicationController
         flash[ :error ] = 'No tasks were selected for import. Please select at least one task and try again.'
       end
       
-      # Get defaults to use for all tasks - sure there is a nicer ruby way, but this works
+      # Get defaults to use for all tasks - keep track of these to save a few db lookups.
       #
       # Tracker
       default_tracker = Tracker.find(:first, :conditions => [ "id = ?", Setting.plugin_redmine_planning['tracker']])
       default_tracker_id = default_tracker.id unless default_tracker.nil?
+      #
+      # Category
+      #
+      default_category = Setting.plugin_redmine_planning['category']
 
+      # We must have a default tracker, but we only require a default category if
+      # none is set for one or more tasks in the project file.
       if ( default_tracker_id.nil? )
         flash[ :error ] = 'No valid default Tracker. Please ask your System Administrator to resolve this.'
       end
@@ -179,7 +186,7 @@ class LoaderController < ApplicationController
 
             # Fudge category if none in XML
             if (source_issue.category.nil?) 
-              source_issue.category = Setting.plugin_redmine_planning['category']
+              source_issue.category = default_category
             end
             if (source_issue.category.nil?) 
               flash[ :error ] = 'No valid default Issue Category. Please ask your System Administrator to resolve this (or set for all tasks in the XML).'
@@ -194,33 +201,59 @@ class LoaderController < ApplicationController
                 i.name = source_issue.category
                 i.project_id = @project.id
               end
-
+              
               category_entry.save!
             end
-
-            destination_issue          = Issue.new do |i|
-              i.tracker_id = default_tracker_id
-              i.category_id = category_entry.id
-              i.subject    = source_issue.title.slice(0, 255) # Max length of this field is 255
-              i.estimated_hours = source_issue.duration
-              i.project_id = @project.id
-              i.author_id = User.current.id
-              i.lock_version = 0
-              i.done_ratio = source_issue.percentcomplete
-              i.description = source_issue.title
-              i.start_date = source_issue.start
-              i.due_date = source_issue.finish unless source_issue.finish.nil?
-              i.due_date = (Date.parse(source_issue.start, false) + ((source_issue.duration.to_f/40.0)*7.0).to_i).to_s unless i.due_date != nil
-
-              if ( source_issue.assigned_to != "" )
-                i.assigned_to_id = source_issue.assigned_to.to_i
-              end
-            end
-
-            destination_issue.save!
             
-            # Now that we know this issue's Redmine issue ID, save it off for later
-            uidToIssueIdMap[ source_issue.uid ] = destination_issue.id
+            #
+            # Find any issue for this project that 'matches' this one
+            #
+            existing_issue = Issue.find(:first, :conditions => ["project_id = ? and subject = ? and tracker_id=?", @project.id, source_issue.title.slice(0,255), default_tracker_id])
+            
+            #
+            # Either populate and save a new issue, or update existing
+            #
+            if existing_issue.nil? then
+
+              destination_issue          = Issue.new do |i|
+                i.tracker_id = default_tracker_id
+                i.category_id = category_entry.id
+                i.subject    = source_issue.title.slice(0, 255) # Max length of this field is 255
+                i.estimated_hours = source_issue.duration
+                i.project_id = @project.id
+                i.author_id = User.current.id
+                i.lock_version = 0
+                i.done_ratio = source_issue.percentcomplete
+                i.description = source_issue.title
+                i.start_date = source_issue.start
+                i.due_date = source_issue.finish unless source_issue.finish.nil?
+                i.due_date = (Date.parse(source_issue.start, false) + ((source_issue.duration.to_f/40.0)*7.0).to_i).to_s unless i.due_date != nil
+  
+                if ( source_issue.assigned_to != "" )
+                  i.assigned_to_id = source_issue.assigned_to.to_i
+                end
+              end
+  
+              destination_issue.save!
+              
+              # Now that we know this issue's Redmine issue ID, save it off for later
+              uidToIssueIdMap[ source_issue.uid ] = destination_issue.id
+              
+            else
+              # Update existing
+              existing_issue.category_id = category_entry.id unless category_entry.id.nil?
+              existing_issue.estimated_hours = source_issue.duration unless source_issue.duration.nil?
+              existing_issue.done_ratio = source_issue.percentcomplete unless source_issue.percentcomplete.nil?
+              existing_issue.start_date = source_issue.start unless source_issue.start.nil?
+              existing_issue.due_date = source_issue.finish unless source_issue.finish.nil?
+              existing_issue.due_date = (Date.parse(source_issue.start, false) + ((source_issue.duration.to_f/40.0)*7.0).to_i).to_s unless source_issue.due_date.nil?
+              existing_issue.assigned_to_id = source_issue.assigned_to.to_i unless source_issue.assigned_to = ""
+  
+              existing_issue.save!
+              
+              # Now that we know this issue's Redmine issue ID, save it off for later
+              uidToIssueIdMap[ source_issue.uid ] = existing_issue.id
+            end
           end
           
           flash[ :notice ] = "#{ to_import.length } #{ to_import.length == 1 ? 'task' : 'tasks' } imported successfully."
