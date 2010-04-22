@@ -956,7 +956,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
             # Create an entry if we're adding time to this day
             if available_hours > 0
               new_entry = ScheduleEntry.new
-              new_entry.project_id = @project.id
+              new_entry.project_id = @project.idArray[1]
               new_entry.user_id = user_id
               new_entry.date = date_index
               new_entry.hours = available_hours
@@ -1066,7 +1066,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
     @projects = @projects & [@project] unless @project.nil?
     @users = visible_users(@projects.collect(&:members).flatten.uniq)
     @users = @users & [@user] unless @user.nil?
-    @users = [@user] if @users.empty? && User.current.admin?
+    @users = [User.current] if @users.empty? && User.current.admin?
     deny_access if (@projects.empty? || @users.empty?) && !User.current.admin?
         
     # Parse the given date or default to today
