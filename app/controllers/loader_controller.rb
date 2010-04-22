@@ -1,8 +1,5 @@
 ########################################################################
 # File:    loader_controler.rb                                         #
-#          Hipposoft 2008                                              #
-#                                                                      #
-# History: 04-Jan-2008 (ADH): Created.                                 #
 #          Feb 2009 (SJS): Hacked into plugin for redmine              #
 ########################################################################
 
@@ -18,6 +15,7 @@ class LoaderController < ApplicationController
   
   unloadable
 
+  before_filter :require_login
   before_filter :find_project, :authorize, :only => [:new, :create]  
 
   require 'zlib'
@@ -157,9 +155,8 @@ class LoaderController < ApplicationController
       # Get defaults to use for all tasks - sure there is a nicer ruby way, but this works
       #
       # Tracker
-      default_tracker_name = Setting.plugin_redmine_loader['tracker']
-      default_tracker = Tracker.find(:first, :conditions => [ "name = ?", default_tracker_name])
-      default_tracker_id = default_tracker.id
+      default_tracker = Tracker.find(:first, :conditions => [ "id = ?", Setting.plugin_redmine_planning['tracker']])
+      default_tracker_id = default_tracker.id unless default_tracker.nil?
 
       if ( default_tracker_id.nil? )
         flash[ :error ] = 'No valid default Tracker. Please ask your System Administrator to resolve this.'
@@ -179,6 +176,14 @@ class LoaderController < ApplicationController
       begin
         Issue.transaction do
           to_import.each do | source_issue |
+
+            # Fudge category if none in XML
+            if (source_issue.category.nil?) 
+              source_issue.category = Setting.plugin_redmine_planning['category']
+            end
+            if (source_issue.category.nil?) 
+              flash[ :error ] = 'No valid default Issue Category. Please ask your System Administrator to resolve this (or set for all tasks in the XML).'
+            end
 
             # Add the category entry if necessary
             category_entry = IssueCategory.find :first, :conditions => { :project_id => @project.id, :name => source_issue.category }
@@ -208,8 +213,7 @@ class LoaderController < ApplicationController
               i.due_date = (Date.parse(source_issue.start, false) + ((source_issue.duration.to_f/40.0)*7.0).to_i).to_s unless i.due_date != nil
 
               if ( source_issue.assigned_to != "" )
-                i.assigned_to_id = source_issue.assigned_to
-                i.status_id = IssueStatus.find_by_name("Assigned").id
+                i.assigned_to_id = source_issue.assigned_to.to_i
               end
             end
 

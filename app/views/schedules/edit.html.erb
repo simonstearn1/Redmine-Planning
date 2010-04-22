@@ -73,7 +73,7 @@ after_submit_href = url_for(:controller => "schedules", :action => "index",
     <%= l(:button_quick_issue) %>
     <%#*<a href="#"  id="CloseButton"%>
      <%#*title="Cancel" onclick="cancelQuickIssue()">%>
-       <%#= image_tag 'close.png', :plugin => 'redmine_schedules',
+       <%#= image_tag 'close.png', :plugin => 'redmine_planning',
          :size => '10x10', :title => "Cancel" %>
   <%#*</a>%>
     </div>
@@ -81,14 +81,14 @@ after_submit_href = url_for(:controller => "schedules", :action => "index",
 </div>
 
 <% content_for :header_tags do %>
-  <%= stylesheet_link_tag 'schedules', :plugin => 'redmine_schedules' %>
-  <%= stylesheet_link_tag 'modalbox-lib', :plugin => 'redmine_schedules' %>
-  <%= stylesheet_link_tag "schedule_tickets", :plugin => 'redmine_schedules' %>
-  <%= javascript_include_tag "hours_functions", :plugin => 'redmine_schedules' %>
-  <%= javascript_include_tag "modalbox", :plugin => 'redmine_schedules' %>
-  <%= javascript_include_tag "modalbox-lib", :plugin => 'redmine_schedules' %>
-  <%= javascript_include_tag "schedule_edit", :plugin => 'redmine_schedules' %>
-  <%= javascript_include_tag "quick_issue", :plugin => 'redmine_schedules' %>
+  <%= stylesheet_link_tag 'schedules', :plugin => 'redmine_planning' %>
+  <%= stylesheet_link_tag 'modalbox-lib', :plugin => 'redmine_planning' %>
+  <%= stylesheet_link_tag "schedule_tickets", :plugin => 'redmine_planning' %>
+  <%= javascript_include_tag "hours_functions", :plugin => 'redmine_planning' %>
+  <%= javascript_include_tag "modalbox", :plugin => 'redmine_planning' %>
+  <%= javascript_include_tag "modalbox-lib", :plugin => 'redmine_planning' %>
+  <%= javascript_include_tag "schedule_edit", :plugin => 'redmine_planning' %>
+  <%= javascript_include_tag "quick_issue", :plugin => 'redmine_planning' %>
 <% end %>
 
 <% content_for :sidebar do %>

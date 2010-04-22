@@ -50,7 +50,7 @@
         </tbody>
       </table>
 
-      <%= javascript_include_tag 'schedules_edit', :plugin => 'redmine_schedules'  %>
+      <%= javascript_include_tag 'schedules_edit', :plugin => 'redmine_planning'  %>
 
       <%= submit_tag l(:button_schedules_fill) %>
     </div>
@@ -59,8 +59,8 @@
   <% html_title(l(:label_schedules_fill)) -%>
 
   <% content_for :header_tags do %>
-    <%= stylesheet_link_tag 'schedules', :plugin => 'redmine_schedules' %>
-    <%= javascript_include_tag 'jquery-1.3.2.min.js', :plugin => 'redmine_schedules'  %>
+    <%= stylesheet_link_tag 'schedules', :plugin => 'redmine_planning' %>
+    <%= javascript_include_tag 'jquery-1.3.2.min.js', :plugin => 'redmine_planning'  %>
     <script type="text/javascript">jQuery.noConflict();</script>
   <% end %>
 

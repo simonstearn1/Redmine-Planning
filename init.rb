@@ -21,7 +21,8 @@ Redmine::Plugin.register :redmine_planning do
 		permission :import_issues_from_xml, :loader => [:new, :create]
 	end
 
-	settings :default => { 'tracker' => -1 }, :partial => 'settings/redmine_planning_settings'
+	settings :default => { 'tracker' => -1, 'category' => -1 }, :partial => 'settings/redmine_planning_settings'
+
 	
 	menu :project_menu, :loader, { :controller => 'loader', :action => 'new' },
     :caption => 'Import Issues', :after => :new_issue, :param => :project_id

@@ -1,13 +1,10 @@
-= Redmine Schedules
+= Redmine Planning
 
-The Schedules plugin allows allocating users to projects and track this allocation in time. 
-Allocation process can be done by simply scheduling to member a number of hours for a given day in a particular project, or can base on the time previously booked for tickets assigned to a user.
-
-I forked it from the GOYELLO folks plugin - we loved the improvements they made, but we have a funky time sheet interfacing problem that means we need to schedule based on high level 'activity' issues rather than the customer raised cases..
+Schedules and other hopefully useful stuff bunged together.
 
 == Requirements
 
-This plugin was tested on Redmine 0.9.2 on linux (Fedora 12) under webbrick and thin.
+This plugin was tested on Redmine 0.trunk...
 
 == Features
 
@@ -23,7 +20,7 @@ This plugin was tested on Redmine 0.9.2 on linux (Fedora 12) under webbrick and 
 
 * Follow the Redmine instrucions http://www.redmine.org/wiki/redmine/Plugins 
 
-==== REMEMBER to change plugin folder name to /plugins/redmine_schedules
+==== REMEMBER to change plugin folder name to /plugins/redmine_planning
 * Log in as an administrator, set permissions for Roles and enable modules in projects 
 * Click the Schedule link in the top left menu
 

@@ -6,7 +6,6 @@ class SchedulesController < ApplicationController
   # Initialization
   # ############################################################################
 
-
   # Filters
   before_filter :require_login
   before_filter :find_users_and_projects, :only => [:index, :edit, :users, :projects, :fill]
@@ -363,7 +362,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
     if(!user_id.nil? && !project_id.nil? && !date.nil?)
       #
       # get Tracker from settings
-      default_tracker_id = Setting.plugin_redmine_schedules['tracker'].to_s
+      default_tracker_id = Setting.plugin_redmine_planning['tracker'].to_s
 
       allIssues = Issue.all(:conditions => ["issues.project_id = :pid AND
         issue_statuses.is_closed = 0 AND trackers.id = " + default_tracker_id,
@@ -1093,7 +1092,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
 
     # Issues start no earlier than today
     possible_start = [Date.today]
-        
+        rails
     # Find out when parent issues from this version have been tentatively
     # scheduled for
     possible_start << issue.relations.collect do |relation|

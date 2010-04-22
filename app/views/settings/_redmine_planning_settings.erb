@@ -5,4 +5,8 @@
     options_for_select( Tracker.all.collect {|is| [is.name, is.id]}, @settings['tracker'].to_i) %>
 </p>
 <p>
+  <label>Default Category Text for loaded tasks with no Issue Category (will be created against project)</label>
+  <%= text_field_tag 'settings[categories]', @settings['categories'] %>
+</p>
+
 
