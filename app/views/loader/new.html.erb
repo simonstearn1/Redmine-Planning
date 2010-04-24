@@ -64,7 +64,7 @@
 <% if ( @import.nil? or @import.tasks.nil? or @import.tasks.empty? ) -%>
 <p>
     This plugin can import data from XML format project management files which
-    were created by applications such as OpenProj or Microsoft Project.
+    were created by applications such as Merlin or even Microsoft Project.
 </p>
 <p>
     Any tasks with non-zero work time assigned are included. Task names are
@@ -106,6 +106,9 @@
         <th> 
             &nbsp;UID&nbsp;
         </th>
+		<th>
+			&nbsp;Level&nbsp;
+		</th>
         <th>
             &nbsp;Category&nbsp;
         </th>
@@ -128,6 +131,9 @@
             &nbsp;Assigned to&nbsp;
         </th>
         <th>
+            &nbsp;Parent&nbsp;
+        </th>
+        <th>
             &nbsp;Requires&nbsp;
         </th>
         <th>
@@ -137,10 +143,16 @@
     <% titles = {}
     dupes  = 0
     @import.tasks.each do | task |
-      if ( titles[ task.title ] == true )
+      while ( titles[ task.title ] == true )
          dupes += 1
          titles[ task.title ] = dupes
-      elsif ( titles[ task.title ].nil? )
+		 if task.title.index(/[0-9]+$/).nil?
+		   task.title = task.title + " " + dupes.to_s
+         else
+           task.title = task.title.gsub(/[0-9]+$/, dupes.to_s)
+         end
+	  end
+      if ( titles[ task.title ].nil? )
          titles[ task.title ] = true
       end
     end
@@ -152,13 +164,16 @@
             <%= hidden_field_tag( "import[tasks][#{ index }][uid]", h( task.uid ) ) %>
             <%= hidden_field_tag( "import[tasks][#{ index }][level]", h( task.level ) ) %>
             <%= h( task.uid ) %>
+		</td>
+		<td>
+			<%= h( task.level ) %>
         </td>
         <td>
             <%= loaderhelp_category_selector( "import[tasks][#{ index }][category]", @project, @import.new_categories, task.category ) %>
         </td>
-        <td align="left" class="task_title">
+        <td align="right" class="task_title">
             <%= titles[ task.title ] != true ? "<span class=\"dup\">#{ titles[ task.title] }:</span>" : '&nbsp;' %>
-            <%= text_field_tag( "import[tasks][#{ index }][title]", h( task.title ), { :size => 50, :class => 'task_title' } ) %> 
+            <%= text_field_tag( "import[tasks][#{ index }][title]", h( task.title ), { :size => (50-(2*task.level)), :class => 'task_title' } ) %> 
         </td>
         <td align="left">
             <%= text_field_tag( "import[tasks][#{ index }][start]", h( task.start ), { :size => 10 } ) %>
@@ -173,7 +188,11 @@
             <%= text_field_tag( "import[tasks][#{ index }][percentcomplete]", h( task.percentcomplete ), { :size => 3 } ) %>
         </td>
         <td>
-            <%= loaderhelp_user_selector( "import[tasks][#{ index }][assigned_to]", @project ) %>
+            <%= loaderhelp_user_selector( "import[tasks][#{ index }][assigned_to]", @project , task) %>
+        </td>
+        <td>
+            <%= hidden_field_tag( "import[tasks][#{ index }][parent]", h( task.parent_uid ) ) %>
+            <%= h( task.parent_uid ) %>
         </td>
         <td>
             <%= hidden_field_tag( "import[tasks][#{ index }][predecessors]", h( task.predecessors.join(', ') ) ) %>
@@ -181,6 +200,8 @@
         </td>
         <td>
             <%= check_box_tag( "import[tasks][#{ index }][import]", '1', true, { :class => 'checkbox' } ) %>
+	        <%= hidden_field_tag( "import[tasks][#{ index }][notes]", h( task.predecessors.join(', ') ) ) %>
+
         </td>
     </tr>
     <% end -%>
@@ -196,7 +217,7 @@
     <tr>
         <td align="right" colspan="5">
             <strong>Warning!</strong>
-            Some task titles are identical. You need to rename them if importing. If you see a '500' Server error - you may have missed one.
+            Some task titles were identical, and were modified.
         </td>
     </tr>
     <% end -%>

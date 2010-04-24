@@ -11,34 +11,6 @@
 
 module LoaderHelper
   
-  # Generate a project selector for the project to which imported tasks will
-  # be assigned. HTML is output which is suitable for inclusion in a table
-  # cell or other similar container. Pass the form object being used for the
-  # task import view.
-  
-  def loaderhelp_project_selector( form )
-    projectlist = Project.find :all, :conditions => Project.visible_by(User.current)
-    
-    unless( projectlist.empty? )
-      output  = "        &nbsp;Project to which all tasks will be assigned:\n"
-      output  << "<select id=\"import_project_id\" name=\"import[project_id]\"><optgroup label=\"Your Projects\"> "
-      
-      projectlist.each do | projinfo |
-        
-        output = output + "<option value=\"" + projinfo.id.to_s + "\">" + projinfo.to_s + "</option>"
-        
-      end
-      output << "</optgroup>"
-      output << "</select>"
-      
-      
-    else
-      output  = "        There are no projects defined. You can create new\n"
-      output << "        projects #{ link_to( 'here', '/project/new' ) }."
-    end
-    
-    return output
-  end
 
   # Generate a category selector to which imported tasks will
   # be assigned. HTML is output which is suitable for inclusion in a table
@@ -54,7 +26,7 @@ module LoaderHelper
 
     existingCategoryList.each do | category_info |
       if ( category_info.to_s == requestedCategory )
-        output << "<option value=\"" + category_info.to_s + "\" selected=\"selected\">" + category_info.to_s + "</option>"
+        output << "<option value=\"" + category_info.to_s + "\" selected>" + category_info.to_s + "</option>"
       else
         output << "<option value=\"" + category_info.to_s + "\">" + category_info.to_s + "</option>"
       end
@@ -68,7 +40,7 @@ module LoaderHelper
     allNewCategories.each do | category_name |
       if ( not existingCategoryList.include?(category_name) )
         if ( category_name == requestedCategory )
-          output << "<option value=\"" + category_name + "\" selected=\"selected\">" + category_name + "</option>"
+          output << "<option value=\"" + category_name + "\" selected>" + category_name + "</option>"
         else
           output << "<option value=\"" + category_name + "\">" + category_name + "</option>"
         end
@@ -87,7 +59,7 @@ module LoaderHelper
   # cell or other similar container. Pass the form object being used for the
   # task import view.
 
-  def loaderhelp_user_selector( fieldId, project )
+  def loaderhelp_user_selector( fieldId, project, task )
 
     # First populate the selection box with all the existing categories from this project
     memberList = Member.find( :all, :conditions => { :project_id => project } )
@@ -97,6 +69,8 @@ module LoaderHelper
     memberList.each do | current_member |
       userList.push( User.find( :first, :conditions => { :id => current_member.user_id } ) )
     end
+  
+    userList.compact!
 
     output = "<select id=\"" + fieldId + "\" name=\"" + fieldId + "\">"
 
@@ -106,7 +80,13 @@ module LoaderHelper
     # Add all the users
     userList = userList.sort { |a,b| a.firstname + a.lastname <=> b.firstname + b.lastname }
     userList.each do | user_entry |
-      output << "<option value=\"" + user_entry.id.to_s + "\">" + user_entry.firstname + " " + user_entry.lastname + "</option>"
+      output << "<option value=\"" + user_entry.id.to_s + "\""
+      unless (task.users.nil? || task.users.empty?)
+        if task.users[0] == user_entry.id
+          output << " selected "
+        end
+      end
+      output << ">" + user_entry.firstname + " " + user_entry.lastname + " </option>"
     end
 
     output << "</select>"
