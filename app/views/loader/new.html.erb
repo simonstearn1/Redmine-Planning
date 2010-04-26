@@ -200,8 +200,9 @@
         </td>
         <td>
             <%= check_box_tag( "import[tasks][#{ index }][import]", '1', true, { :class => 'checkbox' } ) %>
-	        <%= hidden_field_tag( "import[tasks][#{ index }][notes]", h( task.predecessors.join(', ') ) ) %>
-
+		</td>
+		<td>
+	        <%= hidden_field_tag( "import[tasks][#{ index }][description]", h( task.description ) ) %>
         </td>
     </tr>
     <% end -%>

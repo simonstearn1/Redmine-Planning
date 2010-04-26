@@ -124,7 +124,7 @@ class LoaderController < ApplicationController
         struct.predecessors = task[ :predecessors ].split(', ')
         struct.category = task[ :category ]
         struct.assigned_to = task[ :assigned_to ]
-        struct.notes = task[ :notes ]
+        struct.description = task[ :description ]
         
         
         @import.tasks[ index ] = struct
@@ -214,7 +214,7 @@ class LoaderController < ApplicationController
                 i.tracker_id = default_tracker_id
                 i.category_id = category_entry.id
                 i.subject    = source_issue.title.slice(0, 255) # Max length of this field is 255
-                i.description = source_issue.notes unless source_issue.notes.nil?
+                i.description = source_issue.description unless source_issue.description.nil?
                 i.estimated_hours = source_issue.duration
                 i.project_id = @project.id
                 i.author_id = User.current.id
@@ -243,7 +243,7 @@ class LoaderController < ApplicationController
               end
               # Update existing
               existing_issue.category_id = category_entry.id unless category_entry.id.nil?
-              existing_issue.description = source_issue.notes unless source_issue.notes.nil?
+              existing_issue.description = source_issue.description unless source_issue.description.nil?
               existing_issue.estimated_hours = source_issue.duration unless source_issue.duration.nil?
               existing_issue.done_ratio = source_issue.percentcomplete unless source_issue.percentcomplete.nil?
               # This is a kludge TODO: figure out why this is sometimes needed. probably stupid arithmetic for finish/duration.
@@ -343,7 +343,7 @@ class LoaderController < ApplicationController
         if task.get_elements( 'Milestone'    )[ 0 ].text.to_i == 1
           struct.title           = task.get_elements( 'Name'         )[ 0 ].text.strip
           struct.start           = task.get_elements( 'Start'        )[ 0 ].text.split("T")[0] unless task.get_elements( 'Start' )[ 0 ].nil?
-          struct.notes           = task.get_elements( 'Notes'        )[ 0 ].text unless task.get_elements( 'Notes' )[ 0 ].nil?
+          struct.description     = task.get_elements( 'Notes'        )[ 0 ].text unless task.get_elements( 'Notes' )[ 0 ].nil?
           milestones.push( struct )
         else
           struct.tid             = task.get_elements( 'ID'           )[ 0 ].text.to_i
@@ -351,7 +351,7 @@ class LoaderController < ApplicationController
           struct.level           = task.get_elements( 'OutlineLevel' )[ 0 ].text.to_i
           struct.title           = task.get_elements( 'Name'         )[ 0 ].text.strip
           struct.start           = task.get_elements( 'Start'        )[ 0 ].text.split("T")[0] unless task.get_elements( 'Start' )[ 0 ].nil?
-          struct.notes           = task.get_elements( 'Notes'        )[ 0 ].text unless task.get_elements( 'Notes' )[ 0 ].nil?
+          struct.description     = task.get_elements( 'Notes'        )[ 0 ].text unless task.get_elements( 'Notes' )[ 0 ].nil?
           struct.summary         = 0
           struct.summary         = task.get_elements( 'Summary'      )[ 0 ].text.to_i unless task.get_elements( 'Summary'      )[ 0 ].nil?
           struct.work            = task.get_elements( 'Work'         )[ 0 ].text.strip unless task.get_elements( 'Work' )[ 0 ].nil?
