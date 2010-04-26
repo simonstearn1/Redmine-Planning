@@ -27,7 +27,7 @@ class LoaderController < ApplicationController
     
   end
   
-    
+  
   
   # Take the task data from the 'new' view form and 'create' an "import
   # session"; that is, create real Task objects based on the task list and
@@ -240,6 +240,7 @@ class LoaderController < ApplicationController
               uidToIssueIdMap[ source_issue.uid ] = existing_issue.id
             end # if existing_issue
           end # to_import.each
+          
           # Now note the parent issue ids 
           to_import.each do | source_issue |
             next if source_issue.uid == "0" # Ignore top level issue, probably parent to all
