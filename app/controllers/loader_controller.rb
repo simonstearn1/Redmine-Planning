@@ -9,22 +9,25 @@ class LoaderController < ApplicationController
   unloadable
   
   before_filter :require_login
-  before_filter :find_project, :authorize, :only => [:new, :create]  
+  before_filter :setup_defaults, :authorize, :only => [:new, :create]  
   
   require 'zlib'
   require 'ostruct'
   require 'tempfile'
   require 'rexml/document'
+  @default_tracker_id = 0
+  @default_category = "Project"
   
   # Set up the import view. If there is no task data, this will consist of
   # a file entry field and nothing else. If there is parsed file data (a
   # preliminary task list), then this is included too.
   
   def new
-    # This can and probably SHOULD be replaced with some URL rewrite magic
-    # now that the project loader is Redmine project based.
-    #  find_project()
+    
+    
   end
+  
+    
   
   # Take the task data from the 'new' view form and 'create' an "import
   # session"; that is, create real Task objects based on the task list and
@@ -37,6 +40,7 @@ class LoaderController < ApplicationController
     #    find_project()
     
     # Set up a new TaskImport session object and read the XML file details
+    
     
     xmlfile = params[ :import ][ :xmlfile ]
     @import = TaskImport.new
@@ -69,7 +73,7 @@ class LoaderController < ApplicationController
         # the message off at the first newline.
         
         lines = error.message.split("\n")
-
+        
         flash[ :error  ] = "Failed to read file: #{ lines[ 0 ] }"
       end
       
@@ -84,8 +88,19 @@ class LoaderController < ApplicationController
       
       tasks = params[ :import ][ :tasks ]
       
+      # We must have tasks or a file, a default tracker, but we only require a default category if
+      # none is set for one or more tasks in the project file.
+      
       if ( tasks.nil? )
         flash[ :error ] = "Please choose a file before using the 'Analyse' button."
+      elsif ( @default_tracker_id.nil? )
+        flash[ :error ] = 'No valid default Tracker. Please ask your System Administrator to resolve this.'
+      elsif ( params[ :import ][ :import_selected ].nil? )
+        flash[ :error ] = 'No new file was chosen for analysis. Please choose a file before using the "Analyse" button, or use the "Import" button to import tasks selected in the task list.'
+      end
+      
+      # Bail out quickly if we have errors to report.
+      unless( flash[ :error ].nil? )
         render( { :action => :new } )
         flash.delete( :error  )
         return
@@ -141,27 +156,8 @@ class LoaderController < ApplicationController
       #
       # On the other hand, if the 'import' button *was* used but no tasks were
       # selected for error, raise a different error.
-      
-      if ( params[ :import ][ :import_selected ].nil? )
-        flash[ :error ] = 'No new file was chosen for analysis. Please choose a file before using the "Analyse" button, or use the "Import" button to import tasks selected in the task list.'
-      elsif ( to_import.empty? )
+      if ( to_import.empty? )
         flash[ :error ] = 'No tasks were selected for import. Please select at least one task and try again.'
-      end
-      
-      # Get defaults to use for all tasks - keep track of these to save a few db lookups.
-      #
-      # Tracker
-      default_tracker = Tracker.find(:first, :conditions => [ "id = ?", Setting.plugin_redmine_planning['tracker']])
-      default_tracker_id = default_tracker.id unless default_tracker.nil?
-      #
-      # Category
-      #
-      default_category = Setting.plugin_redmine_planning['category']
-      
-      # We must have a default tracker, but we only require a default category if
-      # none is set for one or more tasks in the project file.
-      if ( default_tracker_id.nil? )
-        flash[ :error ] = 'No valid default Tracker. Please ask your System Administrator to resolve this.'
       end
       
       # Bail out if we have errors to report.
@@ -179,31 +175,13 @@ class LoaderController < ApplicationController
         Issue.transaction do
           to_import.each do | source_issue |
             
-            # Fudge category if none in XML
-            if (source_issue.category.nil?) 
-              source_issue.category = default_category
-            end
-            if (source_issue.category.nil?) 
-              flash[ :error ] = 'No valid default Issue Category and none set for this issue. Please ask your System Administrator to resolve this (or set for all tasks in the XML).'
-            end
-            
-            # Add the category entry if necessary
-            category_entry = IssueCategory.find :first, :conditions => { :project_id => @project.id, :name => source_issue.category }
-            
-            if (category_entry.nil?)
-              # Need to create it
-              category_entry = IssueCategory.new do |i|
-                i.name = source_issue.category
-                i.project_id = @project.id
-              end
-              
-              category_entry.save!
-            end
-            
+            # Create if not there already
+            category_entry = confirm_category(source_issue.category)
+            next if category_entry.nil?
             #
             # Find any issue for this project that 'matches' this one
             #
-            existing_issue = Issue.find(:first, :conditions => ["project_id = ? and subject = ? and tracker_id=?", @project.id, source_issue.title.slice(0,255), default_tracker_id])
+            existing_issue = Issue.find(:first, :conditions => ["project_id = ? and subject = ? and tracker_id=?", @project.id, source_issue.title.slice(0,255), @default_tracker_id])
             
             #
             # Either populate and save a new issue, or update existing
@@ -211,8 +189,8 @@ class LoaderController < ApplicationController
             if existing_issue.nil? then
               
               destination_issue          = Issue.new do |i|
-                i.tracker_id = default_tracker_id
-                i.category_id = category_entry.id
+                i.tracker_id = @default_tracker_id
+                i.category_id = category_entry
                 i.subject    = source_issue.title.slice(0, 255) # Max length of this field is 255
                 i.description = source_issue.description unless source_issue.description.nil?
                 i.estimated_hours = source_issue.duration
@@ -242,7 +220,7 @@ class LoaderController < ApplicationController
                 issue_relation.destroy
               end
               # Update existing
-              existing_issue.category_id = category_entry.id unless category_entry.id.nil?
+              existing_issue.category_id = category_entry unless category_entry.nil?
               existing_issue.description = source_issue.description unless source_issue.description.nil?
               existing_issue.estimated_hours = source_issue.duration unless source_issue.duration.nil?
               existing_issue.done_ratio = source_issue.percentcomplete unless source_issue.percentcomplete.nil?
@@ -312,11 +290,54 @@ class LoaderController < ApplicationController
   
   private
   
-  # Is the current action permitted?
+  def setup_defaults
+    # Get defaults to use for all tasks - keep track of these to *maybe* save a few db lookups.
+    #
+    # Project
+    #
+    @project = Project.find(params[:project_id])  
+    #
+    # Tracker
+    #
+    default_tracker = Tracker.find(:first, :conditions => [ "id = ?", Setting.plugin_redmine_planning['tracker']])
+    @default_tracker_id = default_tracker.id unless default_tracker.nil?
+    #
+    # Category
+    #
+    @default_category = Setting.plugin_redmine_planning['category']
+    
+    # We must have a default tracker, but we only require a default category if
+    # none is set for one or more tasks in the project file.
+    if ( @default_tracker_id.nil? )
+      flash[ :error ] = 'No valid default Tracker. Please ask your System Administrator to resolve this.'
+    end
+    
+  end
   
-  def find_project
-    # @project variable must be set before calling the authorize filter
-    @project = Project.find(params[:project_id])
+  # Create new category if not already existing
+  def confirm_category (issue_category)
+    # Fudge category if none in XML
+    if (issue_category.nil?) 
+      issue_category = @default_category
+    end
+    if (issue_category.nil?) # Still ?!
+      flash[ :error ] = 'No valid default Issue Category and none set for some issues. Please ask your System Administrator to resolve this (or set for all tasks in the XML).'
+      return false
+    end
+    
+    # Add the category entry if necessary
+    category_entry = IssueCategory.find :first, :conditions => { :project_id => @project.id, :name => issue_category }
+    
+    if (category_entry.nil?)
+      # Need to create it
+      category_entry = IssueCategory.new do |i|
+        i.name = issue_category
+        i.project_id = @project.id
+      end
+      
+      category_entry.save!
+    end
+    return category_entry.id
   end
   
   # Obtain a task list from the given parsed XML data (a REXML document).
