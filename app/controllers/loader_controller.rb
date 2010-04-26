@@ -279,8 +279,8 @@ class LoaderController < ApplicationController
           to_import.each do | source_issue |
             source_issue.predecessors.each do | predecessor_uid |
               if ( uidToIssueIdMap.has_key?(predecessor_uid) )
-                # Parent is being imported also.  Go ahead and confirm the association
-                unless (IssueRelation.find(:all, :conditions => ["issue_from_id = ? and issue_to_id = ?", uidToIssueIdMap[predecessor_uid], uidToIssueIdMap[source_issue.uid]]))
+                # Predecessor is being imported also.  Go ahead and confirm the association
+                unless (IssueRelation.find(:all, :conditions => ["issue_from_id = ? and issue_to_id = ?", uidToIssueIdMap[predecessor_uid], uidToIssueIdMap[source_issue.uid]]).length >0)
                   relation_record = IssueRelation.new do |i|
                     i.issue_from_id = uidToIssueIdMap[predecessor_uid]
                     i.issue_to_id = uidToIssueIdMap[source_issue.uid]
