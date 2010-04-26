@@ -69,6 +69,7 @@ class LoaderController < ApplicationController
         # the message off at the first newline.
         
         lines = error.message.split("\n")
+
         flash[ :error  ] = "Failed to read file: #{ lines[ 0 ] }"
       end
       
@@ -124,7 +125,7 @@ class LoaderController < ApplicationController
         struct.category = task[ :category ]
         struct.assigned_to = task[ :assigned_to ]
         struct.notes = task[ :notes ]
-
+        
         
         @import.tasks[ index ] = struct
         to_import[ index ] = struct if ( task[ :import ] == '1' )
@@ -259,11 +260,11 @@ class LoaderController < ApplicationController
               
               # Now that we know this issue's Redmine issue ID, save it off for later
               uidToIssueIdMap[ source_issue.uid ] = existing_issue.id
-            end
-          end
+            end # if existing_issue
+          end # to_import.each
           # Now note the parent issue ids 
           to_import.each do | source_issue |
-            next if source_issue.uid = 0
+            next if source_issue.uid == "0" # Ignore top level issue, probably parent to all
             source_id = uidToIssueIdMap[source_issue.uid]
             parent_id = uidToIssueIdMap[source_issue.parent]
             next if source_id.nil? || parent_id.nil?
@@ -331,6 +332,10 @@ class LoaderController < ApplicationController
     uid_tasks = []
     uid_resources = []
     
+    max_category_depth = 2
+    max_category_depth = Setting.plugin_redmine_planning['depth'].to_i unless Setting.plugin_redmine_planning['depth'].nil?
+    
+    
     doc.each_element( 'Project/Tasks/Task' ) do | task |
       begin
         struct = OpenStruct.new
@@ -380,8 +385,7 @@ class LoaderController < ApplicationController
           
         end # if
       rescue
-        puts "Malformed task:" + task.to_s
-        # Ignore errors; they tend to indicate malformed tasks, or at least,
+        # Arrogantly ignore errors; they tend to indicate malformed tasks, or, at least,
         # XML file task entries that we do not understand.
       end # begin
     end # do doc.each_element
@@ -395,19 +399,28 @@ class LoaderController < ApplicationController
     # *next* task has an outline level greater than the current task,
     # then the current task has children. Make a note of parenthood.
     
+    last_summary_task=[]
     
     tasks.each_index do | index |
       task = tasks[index]
       next_task=tasks[index+1]
-      if ( next_task and next_task.level > task.level )
+      
+      next if next_task.nil?
+      # Is next closer to leaf ?
+      if next_task.level > task.level
         next_task.parent_uid = task.uid
-        all_categories.push(task.title)
-      end # if
-      if all_categories.empty? 
-        task.category = 'Project'
+        # We have just found a new summary task
+        last_summary_task[task.level.to_i] = task.uid
+        # not sure about this - but it will do for now
+        if task.level < max_category_depth
+          all_categories.push(task.title)
+        end # if
       else
-        task.category = all_categories[-1]
-      end
+        # Make a note of the previous summary uid at this level
+        level = next_task.level.to_i - 1
+        next_task.parent_uid = last_summary_task[level]
+      end # if
+      task.category = all_categories[-1] # always most recent
     end #do each_index
     
     # Now create a secondary array, where the UID of any given task is
