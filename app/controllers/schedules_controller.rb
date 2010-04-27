@@ -93,7 +93,7 @@ class SchedulesController < ApplicationController
   def default
     @schedule_default = ScheduleDefault.find_by_user_id(@user)
     @schedule_default ||= ScheduleDefault.new
-    @schedule_default.weekday_hours ||= [0,0,0,0,0,0,0]
+    @schedule_default.weekday_hours ||= [0,8,8,8,8,8,0]
     @schedule_default.user_id = @user.id
     @calendar = Redmine::Helpers::Calendar.new(Date.today, current_language, :week)
   end

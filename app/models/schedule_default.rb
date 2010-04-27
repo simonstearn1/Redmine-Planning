@@ -6,6 +6,6 @@ class ScheduleDefault < ActiveRecord::Base
 	
 	def initialize
 		super
-		self.weekday_hours = [0,0,0,0,0,0,0]
+		self.weekday_hours = [0,8.0,8.0,8.0,8.0,8.0,0]
 	end
 end
