@@ -173,7 +173,7 @@
         </td>
         <td align="right" class="task_title">
             <%= titles[ task.title ] != true ? "<span class=\"dup\">#{ titles[ task.title] }:</span>" : '&nbsp;' %>
-            <%= text_field_tag( "import[tasks][#{ index }][title]", h( task.title ), { :size => (50-(2*task.level)), :class => 'task_title' } ) %> 
+            <%= text_field_tag( "import[tasks][#{ index }][title]", h( task.title ), { :size => (50-(2*task.level.to_f)), :class => 'task_title' } ) %> 
         </td>
         <td align="left">
             <%= text_field_tag( "import[tasks][#{ index }][start]", h( task.start ), { :size => 10 } ) %>
