@@ -2,7 +2,7 @@
 avaHours = SchedulesController.left_hours(entry.user.id, entry.date.to_s);
 schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date);
 %>
-<li class="schedule_entry" style="min-height: <%= 2.7*entry.hours %>em">
+<li class="schedule_entry" id="schedule_entry" style="min-height: <%= 2.7*entry.hours %>em">
   <div title="<%= ScheduleCompatibility::I18n.lwr(:label_f_hour, :value => entry.hours) %>"
        style="min-height: <%= 2.7*entry.hours - 1.7 %>em; <%= entry.style(@user.nil? ? entry.user.id : entry.project.id) %>">
          <%= link_to entry.project, :controller => 'schedules', :action => 'index',

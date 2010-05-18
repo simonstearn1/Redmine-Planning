@@ -42,7 +42,29 @@
   <% end %>
 
   <%= error_messages_for 'query' %>
+<% use_proto_menu -%>
+<% 
+  menu_item1 = 
+    {
+      :name => "'menu item 1'",
+      :callback => "function() { 
+        alert('menu item 1');
+        }
+        "
+    }
 
+  menu_item2 = 
+    {
+      :name => "'menu item 2'",
+      :callback => "function() { 
+        alert('menu item 2');
+        }
+        "
+    }
+
+  menu_items = [menu_item1, menu_item2]
+  add_proto_menu('schedule_entry', menu_items)    
+%>
   <%= render :partial => 'calendar', :locals => {:calendar => @calendar} %>
 
 <% else %>

@@ -16,7 +16,7 @@ Redmine::Plugin.register :redmine_planning do
     permission :import_issues_from_xml, :loader => [:new, :create], :require => :member
 	end
 
-	requires_redmine :version_or_higher => '0.9.2'
+	requires_redmine :version_or_higher => '0.1'
 
 	settings :default => { 'tracker' => -1, 'category' => -1 }, :partial => 'settings/redmine_planning_settings'
 

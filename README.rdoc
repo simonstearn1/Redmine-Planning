@@ -1,10 +1,10 @@
 = Redmine Planning
 
-Schedules and other hopefully useful stuff bunged together.
+Schedules and other hopefully useful stuff bunged together - with the eventual aim of automating the creation of schedules from a proposed project plan.
 
 == Requirements
 
-This plugin was tested on Redmine 1.0 RC as is at some point in time..
+This plugin was tested on Redmine 1.0 (revision 3739).
 
 == Features
 
@@ -12,7 +12,7 @@ TODO: Write docs
 
 == Installation and Setup
 
-* Follow the Redmine instrucions http://www.redmine.org/wiki/redmine/Plugins 
+* Follow the Redmine instructions http://www.redmine.org/wiki/redmine/Plugins 
 
 ==== REMEMBER to change plugin folder name to /plugins/redmine_planning
 * Log in as an administrator, set permissions for Roles and enable modules in projects 
@@ -35,3 +35,8 @@ Thanks go to the following people whos code ended up in here
 
 == Other information
 Requires Redmine 1.0 or above.
+
+
+== WARRANTY
+
+No warranty is offered, express or implied, that this code is fit for any purpose. It exists for my amusement only.
