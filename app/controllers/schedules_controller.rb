@@ -22,6 +22,7 @@ class SchedulesController < ApplicationController
   helper :sort
   helper :validated_fields
 
+  layout "schedules", :except => [:move_to ]
   @@remote = false;
 
   def SchedulesController.fetch_default_status_id
@@ -766,7 +767,17 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
       end
     end
   end
-    
+  
+  #
+  # Move scheduled entries from this to end
+  #
+  
+  def move_to
+    @@remote = true
+    flash[:notice] = "You clicked something"
+    redirect_to({:action => 'index', :date => Date.parse(params[:date])})
+
+  end
     
   # ############################################################################
   # Private methods
