@@ -1,4 +1,5 @@
 require 'redmine'
+require 'calendar_date_select'
 
 require_dependency 'schedule_compatibility'
 require_dependency 'issue_schedule_destroy_dependency'

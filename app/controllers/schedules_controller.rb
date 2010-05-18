@@ -923,7 +923,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
         return
       end
       params[:fill_total].delete_if { |user_id, fill_total| fill_total.to_f == 0}
-          
+       
       defaults = get_defaults(params[:fill_total].collect { |user_id, fill_total| user_id.to_i }).index_by { |default| default.user_id }
             
       # Fill the schedule of each specified user
@@ -956,7 +956,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
             # Create an entry if we're adding time to this day
             if available_hours > 0
               new_entry = ScheduleEntry.new
-              new_entry.project_id = @project.idArray[1]
+              new_entry.project_id = @project.id
               new_entry.user_id = user_id
               new_entry.date = date_index
               new_entry.hours = available_hours
@@ -1092,8 +1092,8 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
 
     # Issues start no earlier than today
     possible_start = [Date.today]
-        rails
-    # Find out when parent issues from this version have been tentatively
+ 
+     # Find out when parent issues from this version have been tentatively
     # scheduled for
     possible_start << issue.relations.collect do |relation|
       @open_issues[relation.issue_from_id] if (relation.issue_to_id == issue.id) && schedule_relation?(relation)
