@@ -17,7 +17,7 @@
         "   +
         (yield(:page_scripts) ? yield(:page_scripts) : "")
         ) %>
-        <!-- ... --><title>Yeah Baby:<%=h html_title %></title>
+        <!-- ... --><title><%=h html_title %></title>
         <meta name="description" content="<%= Redmine::Info.app_name %>" />
         <meta name="keywords" content="issue,bug,tracker" />
         <%= stylesheet_link_tag 'application', :media => 'all' %>
