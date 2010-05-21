@@ -29,7 +29,9 @@ schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date); 
       :popup => "force", :hidden => true,
       :onchange => remote_function(  :update => "schedule_display",
                                      :url => {:action => 'move_to', :entry_project => entry.project.id, :entry_user => entry.user.id, :entry_date => entry.date, :project_id => @project, :user_id => @user, :focus => @focus},
-                                     :with => "'new_date='+$F(this)" ) 
+                                     :with => "'new_date='+$F(this)",
+									 :before => "Element.show('ajax-indicator')",
+									 :complete => "Element.hide('ajax-indicator')" ) 
     %>
     <%= "<br/>" if @project.nil? && @user.nil? %><%= link_to entry.user, :controller => 'schedules', :action => 'index',
     :date => entry.date, :user_id => entry.user.id if @user.nil? %>
