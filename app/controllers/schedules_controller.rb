@@ -8,7 +8,7 @@ class SchedulesController < ApplicationController
   
   # Filters
   before_filter :require_login
-  before_filter :find_users_and_projects, :only => [:index, :edit, :users, :projects, :fill, :move_to]
+  before_filter :find_users_and_projects, :only => [:index, :edit, :users, :projects, :fill]
   before_filter :find_optional_project, :only => [:report, :details]
   before_filter :find_project_by_version, :only => [:estimate]
   before_filter :save_entries, :only => [:edit]
@@ -22,7 +22,6 @@ class SchedulesController < ApplicationController
   helper :sort
   helper :validated_fields
   
-  layout "schedules", :except => [:move_to ]
   @@remote = false;
   
   def SchedulesController.fetch_default_status_id
@@ -178,8 +177,7 @@ class SchedulesController < ApplicationController
   # Retrieve scheduled hours saved in schedule entry table
   #
   def schedule_entry_hours(user_id, project_id, date)
-    schedule_entry = ScheduleEntry.find_by_user_id_and_project_id_and_date(
-                                                                           user_id, project_id, date);
+    schedule_entry = ScheduleEntry.find_by_user_id_and_project_id_and_date(user_id, project_id, date);
     
     if(!schedule_entry.nil?)
       return schedule_entry.hours;
@@ -253,8 +251,7 @@ class SchedulesController < ApplicationController
   #
   # # #
   def spentTime(user_id, issue_id)
-    entries = TimeEntry.all(:conditions => ["issue_id = ? AND user_id = ?",
-    issue_id, user_id ]);
+    entries = TimeEntry.all(:conditions => ["issue_id = ? AND user_id = ?", issue_id, user_id ]);
     sum = 0;
     
     entries.each { |entry| sum += entry.hours; }
@@ -780,18 +777,61 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
       new_date = Date.parse(params[:new_date])
       old_date = Date.parse(params[:entry_date])
       
-      # Move the selected entry as requested
-      theEntries = ScheduleEntry.find(:all, :conditions => ["user_id = ? AND date = ? AND project_id = ?", user_id, old_date, project_id]);
-      theEntries.each do | theEntry |
-       theEntry.date = new_date
-       theEntry.save!
+      unless new_date == old_date
+        # Begin Transaction - just to avoid the war of the project managers
+        ActiveRecord::Base.transaction do
+          # Schedule Entries first...
+          # Find the pre-existing entry
+          existingEntries = ScheduleEntry.find(:all, :conditions => ["user_id = ? AND date = ? AND project_id = ?", user_id, old_date, project_id])
+          hoursToMove = existingEntries[0].hours
+          totalHours = hoursToMove
+          existingEntries = ScheduleEntry.find(:all, :conditions => ["user_id = ? AND date = ? AND project_id = ?", user_id, new_date, project_id])
+          unless existingEntries.nil? || existingEntries.empty?
+            totalHours += existingEntries[0].hours
+          end
+          
+          # Add new, remove old
+          updateScheduleEntryHours(user_id, project_id, new_date, totalHours)
+          updateScheduleEntryHours(user_id, project_id, old_date, 0.0)
+          
+          # Now fixup ScheduledIssues...
+          sourceScheduledIssues = ScheduledIssue.find(:all, :conditions => ["user_id = ? AND date = ? AND project_id = ?", user_id, old_date, project_id])
+          destinationScheduledIssues = ScheduledIssue.find(:all, :conditions => ["user_id = ? AND date = ? AND project_id = ?", user_id, new_date, project_id])
+          
+          # Create associative array to get quick access into the list
+          destination=[]
+          destinationScheduledIssues.each do | destinationIssue |
+            destination[destinationIssue.issue_id] = destinationIssue
+          end
+          
+          # Merge them in
+          unless destination.empty?
+            sourceScheduledIssues.each do | sourceScheduledIssue |
+              next if destination[sourceScheduledIssue.issue_id].nil?
+              destination[sourceScheduledIssue.issue_id].scheduled_hours += sourceScheduledIssue.scheduled_hours
+              destination[sourceScheduledIssue.issue_id].save
+              hoursToMove -= sourceScheduledIssue.scheduled_hours
+            end
+          end
+          
+          # Clearout the source ones
+          ScheduledIssue.destroy_all(["date = ? AND user_id = ? AND project_id = ?", old_date, user_id, project_id]);
+          
+          # Schedule any remaining time to zero issue
+          if hoursToMove > 0
+            newScheduledIssue = ScheduledIssue.create(:user_id => user_id, :project_id => project_id, :date => new_date, :scheduled_hours => hoursToMove);
+            newScheduledIssue.save
+          end          
+          # Commit Transaction
+        end
       end
       
       # Prepare to re-render the calendar
+      find_users_and_projects
       @entries = get_entries
       @availabilities = get_availabilities
       
-      # Re-render
+      # Re-render the div
       render :partial => 'calendar', :locals => {:calendar => @calendar, :project => @project, :projects => @projects, :user => @user, :users => @users, :focus => @focus}
     end
     
@@ -1120,7 +1160,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
       # Issues start no earlier than today
       possible_start = [Date.today]
       
-      # Find out when parent issues from this version have been tentatively
+      # Find out when pre-requisite issues from this version have been tentatively
       # scheduled for
       possible_start << issue.relations.collect do |relation|
         @open_issues[relation.issue_from_id] if (relation.issue_to_id == issue.id) && schedule_relation?(relation)
@@ -1130,7 +1170,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
             related_issue.due_date
             end.max
             
-            # Find out when parent issues outside of this version are due
+            # Find out when pre-requisite issues outside of this version are due
             possible_start << issue.relations.collect do |relation|
               Issue.find(relation.issue_from_id) if (relation.issue_to_id == issue.id) && schedule_relation?(relation)
               end.compact.collect do |related_issue|
@@ -1184,4 +1224,5 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
                 def visible_users(members)
                   self.class.visible_users(members)
                 end
+                
               end
