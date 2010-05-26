@@ -34,45 +34,44 @@
             </tr>
         </thead>
         <tbody>
-            <% if !@focus.nil?
+          <% if !@focus.nil?
             if @focus == "users"
-            schedule_entries_by_focus = @entries.group_by {|entry| entry.user_id}
-            focus_objects = @users
+              schedule_entries_by_focus = @entries.group_by {|entry| entry.user_id}
+              focus_objects = @users
             else
-            schedule_entries_by_focus = @entries.group_by {|entry| entry.project_id}
-            focus_objects = @projects
+              schedule_entries_by_focus = @entries.group_by {|entry| entry.project_id}
+              focus_objects = @projects
             end
             focus_objects.each do |focus_object|
-            entries = schedule_entries_by_focus[focus_object.id]
-            @user = focus_object if @focus == "users"
-            @project = focus_object if @focus == "projects"
-            schedule_entries_by_day = entries.group_by {|entry| entry.date} unless entries.nil? %>
-            <tr>
+              entries = schedule_entries_by_focus[focus_object.id]
+              @user = focus_object if @focus == "users"
+              @project = focus_object if @focus == "projects"
+              schedule_entries_by_day = entries.group_by {|entry| entry.date} unless entries.nil? %>
+              <tr>
                 <th>
                     <%= link_to @project, :controller => 'schedules', :action => 'index', :date => @date, :project_id => @project unless @project.nil? %>
                     <%= link_to @user, :controller => 'schedules', :action => 'index', :date => @date, :user_id => @user unless @user.nil? %>
                 </th>
                 <% (calendar.startdt..calendar.enddt).each do |day| %>
-                <td class="even<%= ' today' if Date.today == day %>">
+                  <td class="even<%= ' today' if Date.today == day %>">
                     <ul>
-                        <% if !schedule_entries_by_day.nil? && !schedule_entries_by_day[day].nil? %>
+                      <% if !schedule_entries_by_day.nil? && !schedule_entries_by_day[day].nil? %>
                         <% schedule_entries_by_day[day].sort.each do |entry| %>
-                        <%= render :partial => 'schedules/schedule_entry', :locals =>
-                        {:entry => entry, :day => day } %>
+                          <%= render :partial => 'schedules/schedule_entry', :locals => {:entry => entry, :day => day, :focus => @focus } %>
                         <% end %>
-                        <% end %>
-                        <% if @focus == "users" %>
+                      <% end %>
+                      <% if @focus == "users" %>
                         <% hours = @availabilities[day][focus_object.id] %>
                         <%= render :partial => 'schedules/availability', :locals => {:user => @user, :hours => hours, :day => day } %>
-                        <% end unless @availabilities.nil? || @availabilities.empty? %>
+                      <% end unless @availabilities.nil? || @availabilities.empty? %>
                     </ul>
-                </td>
+                  </td>
                 <% end %>
-            </tr>
+              </tr>
             <% end %>
-            <% @project = nil %>
-            <% @user = nil %>
-            <% else %>
+          <% @project = nil %>
+          <% @user = nil %>
+          <% else %>
             <% schedule_entries_by_day = @entries.group_by {|entry| entry.date} %>
             <tr>
                 <% (calendar.startdt..calendar.enddt).each do |day| %>
@@ -80,7 +79,7 @@
                     <ul>
                         <% if !schedule_entries_by_day[day].nil? %>
                         <% schedule_entries_by_day[day].sort.each do |entry| %>
-                        <%= render :partial => 'schedules/schedule_entry', :locals => {:entry => entry} %>
+                        <%= render :partial => 'schedules/schedule_entry', :locals => {:entry => entry, :focus => @focus} %>
                         <% end %>
                         <% end %>
                         <% @availabilities[day].each do |user_id, hours| %>

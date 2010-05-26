@@ -1,6 +1,7 @@
 class SchedulesController < ApplicationController
   unloadable
   
+  CRAZY_DAY = 5832 # approx hours in venus day..
   
   # ############################################################################
   # Initialization
@@ -766,16 +767,17 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
     end
     
     #
-    # Move scheduled entries from this to end
+    # Move scheduled entries from this to new date
     #
     
     def move_to
-      @@remote = true
       # Setup params
       project_id = params[:entry_project]
       user_id = params[:entry_user]
       new_date = Date.parse(params[:new_date])
-      old_date = Date.parse(params[:entry_date])
+      old_date = Date.parse(params[:date])
+      @focus = params[:focus]
+
       
       unless new_date == old_date
         # Begin Transaction - just to avoid the war of the project managers
@@ -817,7 +819,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
           # Clearout the source ones
           ScheduledIssue.destroy_all(["date = ? AND user_id = ? AND project_id = ?", old_date, user_id, project_id]);
           
-          # Schedule any remaining time to zero issue
+          # Schedule any remaining time to zero issue so it adds up
           if hoursToMove > 0
             newScheduledIssue = ScheduledIssue.create(:user_id => user_id, :project_id => project_id, :date => new_date, :scheduled_hours => hoursToMove);
             newScheduledIssue.save
@@ -827,10 +829,22 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
       end
       
       # Prepare to re-render the calendar
-      find_users_and_projects
-      @entries = get_entries
+      @calendar = Redmine::Helpers::Calendar.new(old_date, current_language, :week)
+      @users = User.find_all_by_id(params[:users])
+      @users.sort! unless @users.nil? || @users.empty?
+      @projects = Project.find(:all, :conditions => ["identifier in (?)", params[:projects]])
+      @projects.sort! unless @projects.nil? || @projects.empty?
+      do_projects, do_users = true, true
+      if @focus.nil? || @focus == 'users'
+        @focus = 'users'
+        do_projects = false
+      end
+      if @focus == 'projects'
+        do_users = false
+      end
+      @entries = get_entries(do_projects, do_users)
       @availabilities = get_availabilities
-      
+
       # Re-render the div
       render :partial => 'calendar', :locals => {:calendar => @calendar, :project => @project, :projects => @projects, :user => @user, :users => @users, :focus => @focus}
     end
@@ -1044,9 +1058,11 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
     
     
     # Get schedule entries between two dates for the specified users and projects
-    def get_entries(project_restriction = true)
+    def get_entries(project_restriction = true, all_users = false)
       restrictions = "(date BETWEEN '#{@calendar.startdt}' AND '#{@calendar.enddt}')"
-      restrictions << " AND user_id = " + @user.id.to_s unless @user.nil?
+      unless all_users
+        restrictions << " AND user_id = " + @user.id.to_s unless @user.nil?
+      end
       if project_restriction
         restrictions << " AND project_id IN ("+@projects.collect {|project| project.id.to_s }.join(',')+")" unless @projects.empty?
         restrictions << " AND project_id = " + @project.id.to_s unless @project.nil?
@@ -1131,7 +1147,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
       @projects = visible_projects.sort
       @projects = @projects & @user.projects unless @user.nil?
       @projects = @projects & [@project] unless @project.nil?
-      @users = visible_users(@projects.collect(&:members).flatten.uniq)
+      @users = visible_users(@projects.collect(&:members).flatten.uniq) if @users.nil?
       @users = @users & [@user] unless @user.nil?
       @users = [User.current] if @users.empty? && User.current.admin?
       deny_access if (@projects.empty? || @users.empty?) && !User.current.admin?
@@ -1154,75 +1170,80 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
     
     
     # This function will schedule an issue for the earliest open schedule for the
-    # issue's assignee.
-    def schedule_issue(issue)
+    # issue's assignee. Maybe an issue should know how to schedule itself,
+    # but here we are the other way around - at least I know about resource availability.
+    # issue == the issue object to be scheduled
+    # project_issues == array of issues in the project, indexed by issue_id
+    # keep_dates == true if issue start / end dates are to be untouched regardless of resource 'availability'
+    def schedule_issue(issue, project_issues = [], keep_dates = false)
       
-      # Issues start no earlier than today
-      possible_start = [Date.today]
+      unless keep_dates
+        # Issues start no earlier than today
+        possible_start = [Date.today]
       
-      # Find out when pre-requisite issues from this version have been tentatively
-      # scheduled for
-      possible_start << issue.relations.collect do |relation|
-        @open_issues[relation.issue_from_id] if (relation.issue_to_id == issue.id) && schedule_relation?(relation)
+        # Find out when pre-requisite issues from this version have been tentatively
+        # scheduled for
+        possible_start << issue.relations.collect do |relation|
+          project_issues[relation.issue_from_id] if (relation.issue_to_id == issue.id) && schedule_relation?(relation)
         end.compact.collect do |related_issue|
           related_issue if related_issue.fixed_version == issue.fixed_version
-          end.compact.collect do |related_issue|
-            related_issue.due_date
-            end.max
+        end.compact.collect do |related_issue|
+          related_issue.due_date
+        end.max
             
-            # Find out when pre-requisite issues outside of this version are due
-            possible_start << issue.relations.collect do |relation|
-              Issue.find(relation.issue_from_id) if (relation.issue_to_id == issue.id) && schedule_relation?(relation)
-              end.compact.collect do |related_issue|
-                related_issue if related_issue.fixed_version != issue.fixed_version
-                end.compact.collect do |related_issue|
-                  related_issue.due_date unless related_issue.due_date.nil?
-                  end.compact.max
+        # Find out when pre-requisite issues outside of this version are due
+        possible_start << issue.relations.collect do |relation|
+          Issue.find(relation.issue_from_id) if (relation.issue_to_id == issue.id) && schedule_relation?(relation)
+        end.compact.collect do |related_issue|
+          related_issue if related_issue.fixed_version != issue.fixed_version
+        end.compact.collect do |related_issue|
+          related_issue.due_date unless related_issue.due_date.nil?
+        end.compact.max
                   
-                  # Determine the earliest possible start date for this issue
-                  possible_start = possible_start.compact.max
-                  if issue.done_ratio == 100 || @entries[issue.assigned_to.id].nil?
-                    considered_date = possible_start + 1
-                  else
-                    considered_date = @entries[issue.assigned_to.id].collect { |date, entry| entry if entry.date > possible_start }.compact
-                    raise l(:error_schedules_estimate_insufficient_scheduling, issue.assigned_to.to_s + "// " + issue.to_s + " // " + possible_start.to_s) if considered_date.empty?
-                    considered_date = considered_date.min { |a,b| a.date <=> b.date }.date
-                  end
-                  hours_remaining = issue.estimated_hours * ((100-issue.done_ratio)*0.01) unless issue.estimated_hours.nil?
-                  hours_remaining ||= 0
+        # Determine the earliest possible start date for this issue
+        possible_start = possible_start.compact.max
+        considered_date = possible_start
+
+      else
+        possible_start = issue.start_date
+        considered_date = issue.start_date
+      end
+       
+      hours_remaining = 0
+      hours_remaining = issue.estimated_hours * ((100-issue.done_ratio)*0.01) unless issue.estimated_hours.nil?
                   
-                  # Chew up the necessary time starting from the earliest schedule opening
-                  # after the possible start dates.
-                  issue.start_date = considered_date
-                  while hours_remaining > 0
-                    considered_date_round = considered_date
-                    while !@entries[issue.assigned_to.id].nil? && @entries[issue.assigned_to.id][considered_date].nil? && !@entries[issue.assigned_to.id].empty? && (considered_date < Date.today + 365)
-                      considered_date += 1
-                    end
-                    raise l(:error_schedules_estimate_insufficient_scheduling, issue.assigned_to.to_s + " // " + issue.to_s + " // " + considered_date_round.to_s) if @entries[issue.assigned_to.id].nil? || @entries[issue.assigned_to.id][considered_date].nil?
-                    if hours_remaining > @entries[issue.assigned_to.id][considered_date].hours
-                      hours_remaining -= @entries[issue.assigned_to.id][considered_date].hours
-                      @entries[issue.assigned_to.id][considered_date].hours = 0
-                    else
-                      @entries[issue.assigned_to.id][considered_date].hours -= hours_remaining
-                      hours_remaining = 0
-                    end
-                    @entries[issue.assigned_to.id].delete(considered_date) if @entries[issue.assigned_to.id][considered_date].hours == 0
-                  end
-                  issue.due_date = considered_date
-                  
-                  # Store the modified issue back to the global
-                  @open_issues[issue.id] = issue
-                end
+      # Chew up the necessary time starting from the earliest schedule opening
+      # after the possible start dates.
+      issue.start_date = considered_date
+      while hours_remaining > 0
+        considered_date_round = considered_date
+        while !@entries[issue.assigned_to.id].nil? && @entries[issue.assigned_to.id][considered_date].nil? && !@entries[issue.assigned_to.id].empty? && (considered_date < Date.today + 365)
+          considered_date += 1
+        end
+        raise l(:error_schedules_estimate_insufficient_scheduling, issue.assigned_to.to_s + " // " + issue.to_s + " // " + considered_date_round.to_s) if @entries[issue.assigned_to.id].nil? || @entries[issue.assigned_to.id][considered_date].nil?
+        if hours_remaining > @entries[issue.assigned_to.id][considered_date].hours
+          hours_remaining -= @entries[issue.assigned_to.id][considered_date].hours
+          @entries[issue.assigned_to.id][considered_date].hours = 0
+        else
+          @entries[issue.assigned_to.id][considered_date].hours -= hours_remaining
+          hours_remaining = 0
+        end
+        @entries[issue.assigned_to.id].delete(considered_date) if @entries[issue.assigned_to.id][considered_date].hours == 0
+      end
+      issue.due_date = considered_date
+
+      # Store the modified issue back to the global
+      @open_issues[issue.id] = issue
+    end
                 
-                # ############################################################################
-                # Instance method interfaces to class methods
-                # ############################################################################
-                def visible_projects
-                  self.class.visible_projects
-                end
-                def visible_users(members)
-                  self.class.visible_users(members)
-                end
+  # ############################################################################
+  # Instance method interfaces to class methods
+  # ############################################################################
+  def visible_projects
+    self.class.visible_projects
+  end
+  def visible_users(members)
+    self.class.visible_users(members)
+  end
                 
-              end
+end
