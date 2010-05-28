@@ -22,6 +22,7 @@ en:
   label_scheduled_vs_spent_time: Spent vs. Scheduled time
   label_schedules_estimate: Estimate
   label_schedules_estimate_updated: Issues and version dates updated.
+  label_no_developers_in_project: No resources assigned as project members (see project settings tab)
   error_schedules_not_enabled: Schedules module not enabled
   error_schedules_estimate_unestimated_issues: Ensure all issues in this version have estimated times.
   error_schedules_estimate_unassigned_issues: Ensure all issues in this version are assigned.

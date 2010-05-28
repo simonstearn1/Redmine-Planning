@@ -59,6 +59,6 @@ en:
   button_quick_issue: Quick issue
   button_exit: Exit
   error_no_trackers: No tracker is associated to this project. Please check the Project settings.
-  label_no_developers_in_project: There are no developers in this project.
+  label_no_developers_in_project: There are no resources configured as members in this project (project settings, members tab).
   none: None
   no_one: No one
