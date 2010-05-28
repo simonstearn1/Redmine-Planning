@@ -835,8 +835,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
       @projects = Project.find(:all, :conditions => ["identifier in (?)", params[:projects]])
       @projects.sort! unless @projects.nil? || @projects.empty?
       do_projects, do_users = true, true
-      if @focus.nil? || @focus == 'users'
-        @focus = 'users'
+      if @focus == 'users'
         do_projects = false
       end
       if @focus == 'projects'
