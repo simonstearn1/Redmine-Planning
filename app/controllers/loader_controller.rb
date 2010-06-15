@@ -212,6 +212,7 @@ class LoaderController < ApplicationController
               
               # Now that we know this issue's Redmine issue ID, save it off for later
               uidToIssueIdMap[ source_issue.uid ] = destination_issue.id
+              existing_issue = destination_issue
               
             else
               # Delete all pre-existing dependencies for this issue
@@ -224,7 +225,8 @@ class LoaderController < ApplicationController
               existing_issue.description = source_issue.description unless source_issue.description.nil?
               existing_issue.estimated_hours = source_issue.duration unless source_issue.duration.nil?
               existing_issue.done_ratio = source_issue.percentcomplete unless source_issue.percentcomplete.nil?
-              # This is a kludge TODO: figure out why this is sometimes needed. probably stupid arithmetic for finish/duration.
+              # This is a kludge 
+              # TODO: figure out why this is sometimes needed. probably stupid arithmetic for finish/duration.
               if source_issue.start && existing_issue.soonest_start && source_issue.start < existing_issue.soonest_start
                 source_issue.start = existing_issue.soonest_start
               end
@@ -239,8 +241,16 @@ class LoaderController < ApplicationController
               # Now that we know this issue's Redmine issue ID, save it off for later
               uidToIssueIdMap[ source_issue.uid ] = existing_issue.id
             end # if existing_issue
+            
+            # Now schedule estimated hours across issue period for default available time for assigned resource
+            unless ensure_issue_scheduled(existing_issue, Setting.plugin_redmine_planning['level'])
+              flash[ :warning ] = "Error creating schedule for one or more issues"
+            end
+
           end # to_import.each
-          
+          # Now do something with milestones
+          # TODO: think of some scheme that always makes sense.. 
+        
           # Now note the parent issue ids 
           to_import.each do | source_issue |
             next if source_issue.uid == "0" # Ignore top level issue, probably parent to all
@@ -270,9 +280,7 @@ class LoaderController < ApplicationController
               end
             end
           end  
-        end  
-        # Now do something with milestones
-        
+        end # Transation
         # All good.
         flash[ :notice ] = "#{ to_import.length } #{ to_import.length == 1 ? 'task' : 'tasks' } imported successfully."
         
@@ -496,6 +504,72 @@ class LoaderController < ApplicationController
     
     return tasks, all_categories, milestones
   end # get_tasks_from_xml
+  
+  # Make sure ScheduleEntry and ScheduledIssue objects are setup
+  # for the issue - using resource assigned default availability
+  # and re-using existing objects where this fits
+  def ensure_issue_scheduled (existingIssue, fit)
+    
+    return false if existingIssue.nil? || existingIssue.assigned_to_id.nil?
+
+    existingScheduledIssues = ScheduledIssue.all(:conditions => ["user_id = ? AND issue_id = ?", existingIssue.assigned_to_id, existingIssue.issue_id]);
+    sum = 0
+    sum = scheduledIssues.sum(&:scheduled_hours) if !scheduledIssues.nil?
+ 
+    if existingIssue.estimated_hours.nil? || sum == existingIssue.estimated_hours
+      return true # Nothing to do
+    end
+    
+    if sum < existingIssue.estimated_hours
+      return schedule_additional_issue_time(existingIssue, existingIssue.estimated_hours - sum, fit)
+    else
+      return sacrifice_issue_time(existingIssue.assigned_to_id, sum - existingIssue.estimated_hours, existingScheduledIssues)
+    end
+    
+  end # ensure_issue_scheduled
+  
+  def schedule_additional_issue_time(existingIssue, hours, fit)
+    
+  end # schedule_additional_issue_time
+  
+  def schedule_additional_project_time(user_id, project_id, date, hours)
+    
+  end # schedule_additional_project_time
+  
+  def sacrifice_issue_time(user_id, hours, scheduled_issues)
+    scheduled_issues.sort! { |a, b| a.date <=> b.date }
+    while (hours > 0)
+      oldest_entry = scheduled_issues.pop
+      return false if oldest_entry.nil?
+      
+      if hours >= oldest_entry.scheduled_hours
+        hours -= oldest_entry.scheduled_hours
+        sacrifice_project_time(user_id, oldest_entry.project_id, oldest_entry.date, hours)
+        oldest_entry.destroy
+      else
+        oldest_entry.scheduled_hours -= hours
+        sacrifice_project_time(user_id, oldest_entry.project_id, oldest_entry.date, hours)
+        oldest_entry.save
+        hours = 0 # End
+      end
+    end
+    return true  
+  end # sacrifice_issue_time
+  
+  def sacrifice_project_time(user_id, project_id, date, hours)
+    project_schedule = ScheduleEntry.find_by_all(user_id, project_id, date)
+    
+    return false if project_schedule.nil? || project_schedule.empty?
+
+    if project_schedule[0].scheduled_hours > hours
+      project_schedule[0].scheduled_hours -= hours
+      project_schedule[0].save
+    else
+      project_schedule[0].destroy
+    end
+    
+    return true
+  end # sacrifice_project_time
   
   
 end # class LoaderController

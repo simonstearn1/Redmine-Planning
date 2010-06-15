@@ -1,6 +1,6 @@
 <% html_title "Redmine Planning Plugin - Basic Settings" -%>
 <p>
-  <label><%= l(:field_is_default) %> </label>
+  <label>Default Tracker </label>
   <%= select_tag 'settings[tracker]',
     options_for_select( Tracker.all.collect {|is| [is.name, is.id]}, @settings['tracker'].to_i) %>
 </p>
@@ -11,4 +11,8 @@
 <p>
   <label>Max category scanning depth (the deepest summary task to be converted into a category)</label>
   <%= text_field_tag 'settings[depth]', @settings['depth'] %>
+</p>
+<p>
+  <label>Attempt to fit schedule (i.e. basic resource leveling)</label>
+  <%= check_box 'settings[level]', @settings['level'], {}, '1', '0' %>
 </p>
