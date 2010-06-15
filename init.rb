@@ -3,6 +3,7 @@ require 'calendar_date_select'
 
 require_dependency 'schedule_compatibility'
 require_dependency 'issue_schedule_destroy_dependency'
+require_dependency 'issue_patch'
 
 Redmine::Plugin.register :redmine_planning do
 	name 'Redmine Planning Plugin'

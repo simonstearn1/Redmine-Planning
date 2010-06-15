@@ -17,6 +17,11 @@
         "   +
         (yield(:page_scripts) ? yield(:page_scripts) : "")
         ) %>
+        <%= javascript_tag("
+        Timeline_ajax_url=”http://YOUR_SERVER/javascripts/timeline/timeline_ajax/simile-ajax-api.js”;
+        Timeline_urlPrefix=’http://YOUR_SERVER/javascripts/timeline/timeline_js/’;
+        Timeline_parameters=’bundle=true’;")
+        %>
         <!-- ... --><title><%=h html_title %></title>
         <meta name="description" content="<%= Redmine::Info.app_name %>" />
         <meta name="keywords" content="issue,bug,tracker" />
