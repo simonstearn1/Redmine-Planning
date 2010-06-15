@@ -25,7 +25,7 @@
  *                                           // bundled libraries are included
  *      
  * eg your html page would include
- *
+ * 
  *   <script>
  *     Timeline_ajax_url="http://YOUR_SERVER/javascripts/timeline/timeline_ajax/simile-ajax-api.js";
  *     Timeline_urlPrefix='http://YOUR_SERVER/javascripts/timeline/timeline_js/';       
