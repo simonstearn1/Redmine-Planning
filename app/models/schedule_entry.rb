@@ -1,5 +1,4 @@
 class ScheduleEntry < ActiveRecord::Base
-
 	belongs_to :project
 	belongs_to :user
 	
@@ -26,6 +25,11 @@ class ScheduleEntry < ActiveRecord::Base
 		end
 	end
 	
+	#
+  def ScheduleEntry.find_by_all(user_id, project_id, date)
+    return ScheduleEntry.all(:conditions => ["date = ? AND user_id = ? AND project_id = ?",
+        date, user_id, project_id]);
+  end
 ##----------------------------------------------------------------------------##
 	# These methods are based off of Redmine's timelog. They have been
 	# modified to accommodate the needs of the Schedules plugin. In the

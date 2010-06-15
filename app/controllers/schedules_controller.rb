@@ -784,12 +784,13 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
         ActiveRecord::Base.transaction do
           # Schedule Entries first...
           # Find the pre-existing entry
-          existingEntries = ScheduleEntry.find(:all, :conditions => ["user_id = ? AND date = ? AND project_id = ?", user_id, old_date, project_id])
-          hoursToMove = existingEntries[0].hours
+          existingEntries = ScheduleEntry.find_by_all( user_id, project_id, old_date)
+          hoursToMove = 0
+          existingEntries.each { |entry| hoursToMove += entry.hours}
           totalHours = hoursToMove
-          existingEntries = ScheduleEntry.find(:all, :conditions => ["user_id = ? AND date = ? AND project_id = ?", user_id, new_date, project_id])
+          existingEntries = ScheduleEntry.find_by_all( user_id, project_id, new_date)
           unless existingEntries.nil? || existingEntries.empty?
-            totalHours += existingEntries[0].hours
+            existingEntries.each { |entry| totalHours += entry.hours}
           end
           
           # Add new, remove old
@@ -797,8 +798,8 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
           updateScheduleEntryHours(user_id, project_id, old_date, 0.0)
           
           # Now fixup ScheduledIssues...
-          sourceScheduledIssues = ScheduledIssue.find(:all, :conditions => ["user_id = ? AND date = ? AND project_id = ?", user_id, old_date, project_id])
-          destinationScheduledIssues = ScheduledIssue.find(:all, :conditions => ["user_id = ? AND date = ? AND project_id = ?", user_id, new_date, project_id])
+          sourceScheduledIssues = ScheduledIssue.find_by_all(user_id, project_id, old_date)
+          destinationScheduledIssues = ScheduledIssue.find_by_all(user_id, project_id, new_date)
           
           # Create associative array to get quick access into the list
           destination=[]
@@ -807,24 +808,22 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
           end
           
           # Merge them in
-          unless destination.empty?
-            sourceScheduledIssues.each do | sourceScheduledIssue |
-              next if destination[sourceScheduledIssue.issue_id].nil?
+          sourceScheduledIssues.each do | sourceScheduledIssue |
+            
+            hoursToMove -= sourceScheduledIssue.scheduled_hours             
+            
+            if destination[sourceScheduledIssue.issue_id].nil?
+              # move scheduled issue entry
+              sourceScheduledIssue.date = new_date
+              sourceScheduledIssue.save
+            else
+              # Add new hours to existing entry
               destination[sourceScheduledIssue.issue_id].scheduled_hours += sourceScheduledIssue.scheduled_hours
               destination[sourceScheduledIssue.issue_id].save
-              hoursToMove -= sourceScheduledIssue.scheduled_hours
+              sourceScheduledIssue.destroy
             end
           end
           
-          # Clearout the source ones
-          ScheduledIssue.destroy_all(["date = ? AND user_id = ? AND project_id = ?", old_date, user_id, project_id]);
-          
-          # Schedule any remaining time to zero issue so it adds up
-          if hoursToMove > 0
-            newScheduledIssue = ScheduledIssue.create(:user_id => user_id, :project_id => project_id, :date => new_date, :scheduled_hours => hoursToMove);
-            newScheduledIssue.save
-          end          
-          # Commit Transaction
         end
       end
       
@@ -857,7 +856,6 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
       old_date = Date.parse(params[:date])
       @focus = params[:focus]
 
-      flash[:notice] = "Feature not yet implemented"
       # Prepare to re-render the calendar
       @calendar = Redmine::Helpers::Calendar.new(old_date, current_language, :week)
       @users = User.find_all_by_id(params[:users])

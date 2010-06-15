@@ -1,6 +1,7 @@
 class ScheduledIssue < ActiveRecord::Base
-  belongs_to :issues
-  belongs_to :users
+  belongs_to :issue
+  belongs_to :user
+  belongs_to :project
 
   # # Compute total time scheduled on issue
   #   connected with this object
