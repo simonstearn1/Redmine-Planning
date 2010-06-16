@@ -9,6 +9,7 @@ module IssuePlanningPatch
     base.class_eval do
       unloadable
  #     has_many :scheduled_issues, :dependent => :destroy
+      has_many :scheduled_issues
 
       before_validation :adjust_due_date
 
