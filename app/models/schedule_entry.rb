@@ -2,6 +2,7 @@ class ScheduleEntry < ActiveRecord::Base
 	belongs_to :project
 	belongs_to :user
 	
+
 	def style(color_id)
 	
 		red   = ((Math.sin(color_id*2.6+Math::PI*0/3)+5)*32).to_i + 56
@@ -31,7 +32,7 @@ class ScheduleEntry < ActiveRecord::Base
         date, user_id, project_id]);
   end
 ##----------------------------------------------------------------------------##
-	# These methods are based off of Redmine's timelog. They have been
+	# These methods are based on Redmine's timelog. They have been
 	# modified to accommodate the needs of the Schedules plugin. In the
 	# event that changes are made to the original, these methods will need
 	# to be updated accordingly. As such, efforts should be made to modify

@@ -2,6 +2,28 @@ class ScheduledIssue < ActiveRecord::Base
   belongs_to :issue
   belongs_to :user
   belongs_to :project
+  
+#  before_destroy :before_i_die
+
+
+  #
+  # If we get deleted when issue is deleted, make sure we also tidy up the parent schedule_entry
+  def before_i_die
+    
+    schedule_entries = ScheduleEntry.find(:all, :conditions => ['user_id = ? AND project_id = ? AND date = ?', self.user_id, self.project_id, self.date])
+    
+    if schedule_entries[0].hours == self.scheduled_hours
+      schedule_entries[0].destroy
+      return
+    end
+    
+    schedule_entries[0].hours -= self.scheduled_hours
+    schedule_entries[0].save
+    
+    return
+    
+  end
+
 
   # # Compute total time scheduled on issue
   #   connected with this object
@@ -67,8 +89,7 @@ class ScheduledIssue < ActiveRecord::Base
   #
   # # #
   def ScheduledIssue.findByIssueIdAndDate(issue_id, date)
-    return ScheduledIssue.all(:conditions => ["issue_id = ? AND date = ?",
-        issue_id, date]);
+    return ScheduledIssue.all(:conditions => ["issue_id = ? AND date = ?", issue_id, date]);
   end
 
   #
@@ -87,8 +108,7 @@ class ScheduledIssue < ActiveRecord::Base
   #
   # # # #
   def ScheduledIssue.previouslyUsedHours(user_id, project_id, date)
-    scheduledIssues = ScheduledIssue.all(:conditions => ["date = ? AND user_id = ?
-        AND project_id <> ? ", date, user_id, project_id]);
+    scheduledIssues = ScheduledIssue.all(:conditions => ["date = ? AND user_id = ? AND project_id <> ? ", date, user_id, project_id]);
     if(!scheduledIssues.nil? && !scheduledIssues.empty?)
       hours = scheduledIssues.sum(&:scheduled_hours)
     else
@@ -115,11 +135,11 @@ class ScheduledIssue < ActiveRecord::Base
   #
   # # # #
   def ScheduledIssue.hours(user_id, project_id, date)
-    issues = ScheduledIssue.all(:conditions => ["date = ? AND project_id = ? AND
-        user_id = ?", date, project_id, user_id]);
-    sum = issues.sum(&:scheduled_hours) if !issues.nil?
+    issues = ScheduledIssue.all(:conditions => ["date = ? AND project_id = ? AND user_id = ?", date, project_id, user_id]);
+    sum = 0;
+    sum = issues.sum(&:scheduled_hours) if !issues.nil?;
 
-    return sum.nil? ? 0 : sum;
+    return sum
   end
 
 end

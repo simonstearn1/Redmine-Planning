@@ -14,5 +14,11 @@
 </p>
 <p>
   <label>Attempt to fit schedule (i.e. basic resource leveling)</label>
-  <%= check_box 'settings[level]', @settings['level'], {}, '1', '0' %>
+  <%= select_tag 'settings[level]',
+    options_for_select( ["Y", "N"], @settings['level']) %>
+</p>
+<p>
+  <label>Dummy User for Schedule Conflicts</label>
+  <%= select_tag 'settings[user]',
+    options_for_select( User.all.collect {|is| [is.login, is.id]}, @settings['user'].to_i) %>
 </p>

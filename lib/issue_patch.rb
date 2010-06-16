@@ -4,23 +4,19 @@ require_dependency 'issue'
 
 module IssuePlanningPatch
   def self.included(base)
-    base.extend(ClassMethods)
-
     base.send(:include, InstanceMethods)
 
-    # Same as typing in the class 
     base.class_eval do
-      unloadable # Send unloadable so it will not be unloaded in development
-      has_many :scheduled_issues
+      unloadable
+ #     has_many :scheduled_issues, :dependent => :destroy
+
       before_validation :adjust_due_date
-      
+
     end
 
   end
   
-  module ClassMethods
-    
-  end
+
   
   module InstanceMethods
 
@@ -33,8 +29,8 @@ module IssuePlanningPatch
       last_scheduled = self.scheduled_issues.max { |a, b| a.date <=> b.date }
       unless last_scheduled.nil? || self.due_date >= last_scheduled.date
         self.due_date = last_scheduled.date
-        @current_journal = Journal.new(:journalized => self, :user => User.current, :notes => "due date for issue changed by scheduling")
-        @current_journal.save
+        a_journal = Journal.new(:journalized => self, :user => User.find_by_id(Setting.plugin_redmine_planning['user']), :notes => "Due date for issue changed by scheduling process. This indicates contention for a named resource across the issue planned period and may require manual resolution.")
+        a_journal.save
       end
     end
   end    

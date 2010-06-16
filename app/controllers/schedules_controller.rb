@@ -206,8 +206,7 @@ class SchedulesController < ApplicationController
   end
   
   def scheduled_hours_f(user_id, project_id, date)
-    issues = ScheduledIssue.find_all_by_user_id_and_project_id_and_date(user_id,
-                                                                        project_id, date);
+    issues = ScheduledIssue.find_all_by_user_id_and_project_id_and_date(user_id, project_id, date);
     
     if(!issues.nil? && !issues.empty?)
       hours = issues.sum(&:scheduled_hours);
@@ -230,10 +229,9 @@ class SchedulesController < ApplicationController
   #
   # # #
   def SchedulesController.left_hours(user_id, date)
-    scheduledIssues = ScheduledIssue.all(:conditions => ["user_id = ? AND date = ?",
-    user_id, date]);
+    scheduledIssues = ScheduledIssue.all(:conditions => ["user_id = ? AND date = ?", user_id, date])
     
-    hours = 0;
+    hours = 0
     if(!scheduledIssues.nil? && !scheduledIssues.empty?)
       scheduledIssues.each do |issue|
         if(!issue.nil?)
@@ -242,7 +240,7 @@ class SchedulesController < ApplicationController
       end
     end
     
-    return SchedulesController.userHours(user_id, date) - hours;
+    return SchedulesController.userHours(user_id, date) - hours
   end
   
   #
@@ -252,12 +250,12 @@ class SchedulesController < ApplicationController
   #
   # # #
   def spentTime(user_id, issue_id)
-    entries = TimeEntry.all(:conditions => ["issue_id = ? AND user_id = ?", issue_id, user_id ]);
-    sum = 0;
+    entries = TimeEntry.all(:conditions => ["issue_id = ? AND user_id = ?", issue_id, user_id ])
+    sum = 0
     
     entries.each { |entry| sum += entry.hours; }
     
-    return sum;
+    return sum
   end
   
   #
@@ -337,8 +335,7 @@ class SchedulesController < ApplicationController
   # Used to delete database record of empty hours
   #
   def delete_empty_hours
-    ScheduledIssue.delete("issue_id = 0 AND user_id=#{params[:user_id]}
-AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
+    ScheduledIssue.delete("issue_id = 0 AND user_id=#{params[:user_id]} AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
     render :nothing => true
   end
   
@@ -372,8 +369,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
       
       notScheduledIssues = Set.new
       allIssues.each do |issue|
-        sched_issue = ScheduledIssue.first(:conditions => ["issue_id = ? AND date = ?",
-        issue.id, date]);
+        sched_issue = ScheduledIssue.first(:conditions => ["issue_id = ? AND date = ?", issue.id, date]);
         
         if(sched_issue.nil?)
           notScheduledIssues << issue;
@@ -394,9 +390,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
         end
       end
       
-      unassignedIssues = Issue.all(:conditions => ["issues.assigned_to_id IS NULL
-          AND issues.project_id = ? AND issue_statuses.is_closed = 0", project_id],
-        :joins => "LEFT JOIN issue_statuses ON issues.status_id = issue_statuses.id");
+      unassignedIssues = Issue.all(:conditions => ["issues.assigned_to_id IS NULL AND issues.project_id = ? AND issue_statuses.is_closed = 0", project_id], :joins => "LEFT JOIN issue_statuses ON issues.status_id = issue_statuses.id");
       
       retArray = Hash.new;
       retArray['scheduledIssues'] = scheduledIssues;
@@ -428,9 +422,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
   #
   def fetchAllMembersIssues
     @i = params[:i].nil? ? 1 : params[:i].to_i;
-    issues = Issue.all(:conditions => ["issues.assigned_to_id <> ?
-  AND issues.project_id = ? AND issue_statuses.is_closed = 0", params[:user_id], params[:project_id]],
-      :joins => "LEFT JOIN issue_statuses ON issues.status_id = issue_statuses.id");
+    issues = Issue.all(:conditions => ["issues.assigned_to_id <> ? AND issues.project_id = ? AND issue_statuses.is_closed = 0", params[:user_id], params[:project_id]], :joins => "LEFT JOIN issue_statuses ON issues.status_id = issue_statuses.id");
     
     render :partial => 'scheduled_issues_table', :locals => { :issues => issues,
       :scheduled => false };
@@ -873,7 +865,7 @@ AND project_id = #{params[:project_id]} AND date='#{params[:date]}'")
       @availabilities = get_availabilities
 
       # Re-render the div
-      render :partial => 'calendar', :locals => {:date => @old_date, :calendar => @calendar, :project => @project, :projects => @projects, :user => @user, :users => @users, :focus => @focus}
+      render :partial => 'calendar', :locals => {:date => @old_date, :calendar => @calendar, :project_id => @project, :projects => @projects, :user_id => @user, :users => @users, :focus => @focus}
     end
     # ############################################################################
     # Private methods

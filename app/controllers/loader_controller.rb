@@ -1,6 +1,6 @@
 ########################################################################
 # File:    loader_controller.rb                                         #
-#          Feb 2009 (SJS): Hacked into plugin for redmine              #
+#          Updated to apply integration with scheduling                #
 ########################################################################
 
 
@@ -169,7 +169,8 @@ class LoaderController < ApplicationController
       
       # We're going to keep track of new issue ID's to make dependencies work later
       uidToIssueIdMap = {}
-      
+      all_fits = true
+      extended_issue_ids = []
       # Right, good to go! Do the import.
       begin
         Issue.transaction do
@@ -221,6 +222,7 @@ class LoaderController < ApplicationController
                 issue_relation.destroy
               end
               # Update existing
+              existing_issue.tracker_id = @default_tracker_id
               existing_issue.category_id = category_entry unless category_entry.nil?
               existing_issue.description = source_issue.description unless source_issue.description.nil?
               existing_issue.estimated_hours = source_issue.duration unless source_issue.duration.nil?
@@ -243,8 +245,9 @@ class LoaderController < ApplicationController
             end # if existing_issue
             
             # Now schedule estimated hours across issue period for default available time for assigned resource
-            unless ensure_issue_scheduled(existing_issue, Setting.plugin_redmine_planning['level'])
-              flash[ :warning ] = "Error creating schedule for one or more issues"
+            unless ensure_issue_scheduled(existing_issue, Setting.plugin_redmine_planning['level']=="Y")
+              all_fits = false
+              extended_issue_ids << existing_issue.id
             end
 
           end # to_import.each
@@ -258,8 +261,7 @@ class LoaderController < ApplicationController
             parent_id = uidToIssueIdMap[source_issue.parent]
             next if source_id.nil? || parent_id.nil?
             existing_issue = Issue.find_by_id(source_id)
-            parent_issue = Issue.find_by_id(parent_id)
-            next if existing_issue.nil? || parent_issue.nil? # probably a milestone or malformed entry in the XML
+            next if existing_issue.nil? # probably a milestone or malformed entry in the XML
             existing_issue.parent_issue_id = parent_id
             existing_issue.save!
           end          
@@ -280,10 +282,13 @@ class LoaderController < ApplicationController
               end
             end
           end  
-        end # Transation
+        end # Transaction
         # All good.
         flash[ :notice ] = "#{ to_import.length } #{ to_import.length == 1 ? 'task' : 'tasks' } imported successfully."
         
+        unless all_fits # not likely !
+          flash[ :warning ] = "The following new issue ids have modified timing as a result of scheduling:" + extended_issue_ids.join(",").to_s
+        end
         # Now release user into the wild
         redirect_to( "/projects/#{@project.identifier}/issues" )
         
@@ -300,7 +305,7 @@ class LoaderController < ApplicationController
   private
   
   def setup_defaults
-    # Get defaults to use for all tasks - keep track of these to *maybe* save a few db lookups.
+    # Get defaults to use for all tasks
     #
     # Project
     #
@@ -310,6 +315,7 @@ class LoaderController < ApplicationController
     #
     default_tracker = Tracker.find(:first, :conditions => [ "id = ?", Setting.plugin_redmine_planning['tracker']])
     @default_tracker_id = default_tracker.id unless default_tracker.nil?
+   
     #
     # Category
     #
@@ -508,33 +514,143 @@ class LoaderController < ApplicationController
   # Make sure ScheduleEntry and ScheduledIssue objects are setup
   # for the issue - using resource assigned default availability
   # and re-using existing objects where this fits
-  def ensure_issue_scheduled (existingIssue, fit)
+  def ensure_issue_scheduled (existing_issue, fit)
     
-    return false if existingIssue.nil? || existingIssue.assigned_to_id.nil?
+    return true if existing_issue.nil? || existing_issue.assigned_to_id.nil?
 
-    existingScheduledIssues = ScheduledIssue.all(:conditions => ["user_id = ? AND issue_id = ?", existingIssue.assigned_to_id, existingIssue.issue_id]);
+    existing_scheduled_issues = ScheduledIssue.all(:conditions => ["user_id = ? AND issue_id = ?", existing_issue.assigned_to_id, existing_issue.id]);
     sum = 0
-    sum = scheduledIssues.sum(&:scheduled_hours) if !scheduledIssues.nil?
+    sum = existing_scheduled_issues.sum(&:scheduled_hours) if !existing_scheduled_issues.nil?
  
-    if existingIssue.estimated_hours.nil? || sum == existingIssue.estimated_hours
+    if existing_issue.estimated_hours.nil? || sum == existing_issue.estimated_hours
       return true # Nothing to do
     end
     
-    if sum < existingIssue.estimated_hours
-      return schedule_additional_issue_time(existingIssue, existingIssue.estimated_hours - sum, fit)
+    if sum < existing_issue.estimated_hours
+      return schedule_additional_issue_time(existing_issue, existing_issue.estimated_hours - sum, fit)
     else
-      return sacrifice_issue_time(existingIssue.assigned_to_id, sum - existingIssue.estimated_hours, existingScheduledIssues)
+      return sacrifice_issue_time(existing_issue.assigned_to_id, sum - existing_issue.estimated_hours, existing_scheduled_issues)
     end
     
   end # ensure_issue_scheduled
   
-  def schedule_additional_issue_time(existingIssue, hours, fit)
+  def schedule_additional_issue_time(existing_issue, hours, fit)
+    start_date = existing_issue.start_date
+    due_date = existing_issue.due_date
     
+    default_available_hours = ScheduleDefault.find_by_user_id(existing_issue.assigned_to_id)[:weekday_hours]
+    
+    # Check sum(default_available_hours) > 0 (or assume [0,8,8,8,8,8,0] as a default )
+    # TODO: implement smarter resource calendars including regional holidays..
+    if default_available_hours.sum == 0
+      default_available_hours = [0,8,8,8,8,8,0]
+    end
+    
+    # Step through range allocating out max available (ignoring current schedule)
+    # until required hours are done.
+    # TODO: take current commitments into account
+    (start_date..due_date).each do |day|
+      next if hours == 0
+      max_hours = default_available_hours[day.wday]
+      available = max_hours - committed_time(existing_issue.assigned_to_id, day, fit)
+      if available > 0
+        if hours >= available
+          new_hours = available
+          hours -= available
+        else
+          new_hours = hours
+          hours = 0
+        end
+        # create new scheduled_issue entry or update existing to match
+        schedule_additional_issue_entries(existing_issue.assigned_to_id, existing_issue.project_id, existing_issue.id, day, new_hours)
+        # Create new schedule entry entry or update existing to match (urgh)        
+        schedule_additional_project_entries(existing_issue.assigned_to_id, existing_issue.project_id, day, new_hours)
+      end
+    end
+    
+    return true if hours == 0
+    
+    day = due_date
+    # Not all time scheduled 
+    while (hours > 0)
+      day += 1
+      max_hours = default_available_hours[day.wday]
+      available = max_hours - committed_time(existing_issue.assigned_to_id, day, fit)
+      if available > 0
+        if hours >= available
+          new_hours = available
+          hours -= available
+        else
+          new_hours = hours
+          hours = 0
+        end
+        # create new scheduled_issue entry or update existing to match
+        schedule_additional_issue_entries(existing_issue.assigned_to_id, existing_issue.project_id, existing_issue.id, day, new_hours)
+        # Create new schedule entry entry or update existing to match (urgh)        
+        schedule_additional_project_entries(existing_issue.assigned_to_id, existing_issue.project_id, day, new_hours)
+      end
+    end
+
+    return false
+        
   end # schedule_additional_issue_time
-  
-  def schedule_additional_project_time(user_id, project_id, date, hours)
+
+  # Setup scheduled issue entries to match new issue schedule
+  # - create a new one if needed
+  # - extend existing one otherwise
+  def schedule_additional_issue_entries(user_id, project_id, issue_id, date, hours)
+    existing_scheduled_issues = ScheduledIssue.find(:all, :conditions => ['user_id = ? AND project_id = ? AND issue_id = ? AND date = ?', user_id, project_id, issue_id, date ])
     
+    if existing_scheduled_issues.nil? || existing_scheduled_issues.empty?
+      new_scheduled_issue = ScheduledIssue.new
+      new_scheduled_issue.issue_id = issue_id
+      new_scheduled_issue.project_id = project_id
+      new_scheduled_issue.user_id = user_id
+      new_scheduled_issue.date = date
+      new_scheduled_issue.scheduled_hours = hours
+      new_scheduled_issue.save
+      return
+    end
+    
+    # If there are more than one returned issues that is an error..?
+    existing_scheduled_issues[0].scheduled_hours = existing_scheduled_issues[0].scheduled_hours + hours
+    existing_scheduled_issues[0].save
+    return
   end # schedule_additional_project_time
+  
+  # Setup schedule entries to match new issue schedule
+  # - create a new entry if needed
+  # - extend existing one otherwise
+  def schedule_additional_project_entries(user_id, project_id, date, hours)
+    existing_schedule_entries = ScheduleEntry.find(:all, :conditions => ['user_id = ? AND project_id = ? AND date = ?', user_id, project_id, date])
+    
+    if existing_schedule_entries.nil? || existing_schedule_entries.empty?
+      new_schedule_entry = ScheduleEntry.new
+      new_schedule_entry.project_id = project_id
+      new_schedule_entry.user_id = user_id
+      new_schedule_entry.date = date
+      new_schedule_entry.hours = hours
+      new_schedule_entry.save
+      return
+    end
+    
+    # If there are more than one returned issues that is an error..?
+    existing_schedule_entries[0].hours = existing_schedule_entries[0].hours + hours
+    existing_schedule_entries[0].save
+  end # schedule_additional_project_time
+  
+  # return sum of hours committed already
+  # (these are already considered in required hours)
+  
+  def committed_time (user_id, date, fit)
+
+    sum = 0
+    if fit == true
+      existing_scheduled_entries = ScheduleEntry.all(:conditions => ["user_id = ? AND date = ?", user_id, date]);
+      sum = existing_scheduled_entries.sum(&:hours) if !existing_scheduled_entries.nil?
+    end
+    return sum
+  end # commmitted_time
   
   def sacrifice_issue_time(user_id, hours, scheduled_issues)
     scheduled_issues.sort! { |a, b| a.date <=> b.date }
