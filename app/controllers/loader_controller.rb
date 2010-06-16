@@ -391,6 +391,7 @@ class LoaderController < ApplicationController
           struct.summary         = 0
           struct.summary         = task.get_elements( 'Summary'      )[ 0 ].text.to_i unless task.get_elements( 'Summary'      )[ 0 ].nil?
           struct.work            = task.get_elements( 'Work'         )[ 0 ].text.strip unless task.get_elements( 'Work' )[ 0 ].nil?
+          struct.duration        = task.get_elements( 'Duration'     )[ 0 ].text.strip unless task.get_elements( 'Duration' )[ 0 ].nil?
           struct.finish          = task.get_elements( 'Finish'       )[ 0 ].text.split("T")[0] unless task.get_elements( 'Finish')[ 0 ].nil?
           struct.percentcomplete = 0
           struct.percentcomplete = task.get_elements( 'PercentComplete')[0].text.to_i unless task.get_elements( 'PercentComplete')[0].nil?
@@ -406,8 +407,21 @@ class LoaderController < ApplicationController
           strs = struct.work.scan(/.*?(\d+)H(\d+)M(\d+)S.*?/).flatten unless struct.work.nil?
           hours, mins, secs = strs.map { | str | str.to_i } unless strs.nil?
           
+          struct.work = ( ( ( hours * 3600 ) + ( mins * 60 ) + secs ) / 3600 ).prec_f
+          
+          hours = 0
+          mins = 0
+          secs = 0
+          
+          strs = struct.duration.scan(/.*?(\d+)H(\d+)M(\d+)S.*?/).flatten unless struct.duration.nil?
+          hours, mins, secs = strs.map { | str | str.to_i } unless strs.nil?
+          
           struct.duration = ( ( ( hours * 3600 ) + ( mins * 60 ) + secs ) / 3600 ).prec_f
           
+          if struct.duration == 0
+            struct.duration = struct.work
+          end
+
           # Assume standard 8 hour day for work...
           increment = (struct.duration / 8.0) * 86400
           start_elements = struct.start.split("-")
