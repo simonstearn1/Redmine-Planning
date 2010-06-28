@@ -26,7 +26,8 @@ schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date)
     <% else %><%= l(:info_no_scheduled_issues) %><% end %>
     <br>
     <% end %>
-    <%= calendar_date_select_tag ("hidden_date_selector", 
+    <% if (entry.user == User.current ) || User.current.admin? %>
+      <%= calendar_date_select_tag ("hidden_date_selector", 
        "", 
       :time => false, 
       :popup => "force", 
@@ -47,7 +48,7 @@ schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date)
 									                    :before => "Element.show('ajax-indicator')",
 									                    :complete => "Element.hide('ajax-indicator')" ) )%>
 									 
-		<%= link_to_remote( 
+	   	<%= link_to_remote( 
 		      image_tag('Knife-big.png', :title => "Chop up this entry", :plugin => 'redmine_planning'),
          :url => {:action => 'chop_up', :entry_project => entry.project.id, :entry_user => entry.user.id, :date => entry.date, :project_id => @project, :projects => @projects, :user_id => @user, :focus => @focus, :users => @users},
          :update => "schedule_display",
@@ -55,13 +56,14 @@ schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date)
          :complete => "Element.hide('ajax-indicator')")
          %>
          
-    <%= link_to_remote( 
+      <%= link_to_remote( 
           image_tag('Agenda-big.png', :title => "Schedule this entry", :plugin => 'redmine_planning'),
-         :url => {:action => 'chop_up', :entry_project => entry.project.id, :entry_user => entry.user.id, :date => entry.date, :project_id => @project, :projects => @projects, :user_id => @user, :focus => @focus, :users => @users},
+         :url => {:action => 'reschedule', :entry_project => entry.project.id, :entry_user => entry.user.id, :date => entry.date, :project_id => @project, :projects => @projects, :user_id => @user, :focus => @focus, :users => @users},
          :update => "schedule_display",
          :before => "Element.show('ajax-indicator')",
          :complete => "Element.hide('ajax-indicator')")
          %>
+    <% end %>
     <%= "<br/>" if @project.nil? && @user.nil? %><%= link_to entry.user, :controller => 'schedules', :action => 'index',
     :date => entry.date, :user_id => entry.user.id if @user.nil? %>
 </div>

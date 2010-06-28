@@ -15,7 +15,9 @@ class SchedulesController < ApplicationController
   before_filter :save_entries, :only => [:edit]
   before_filter :save_default, :only => [:default]
   before_filter :fill_entries, :only => [:fill]
-  
+
+
+
   # Included helpers
   include SchedulesHelper
   include ValidatedFieldsHelper
@@ -839,9 +841,38 @@ class SchedulesController < ApplicationController
       render :partial => 'calendar', :locals => {:date => @old_date, :calendar => @calendar, :project => @project, :projects => @projects, :user => @user, :users => @users, :focus => @focus}
     end
     
-    
     # Take some hours from this entry and move to a new entry some other time - consolidating as needed.
+    # TODO: Not yet implemented, does nothing
     def chop_up
+      # Setup params
+      project_id = params[:entry_project]
+      user_id = params[:entry_user]
+      old_date = Date.parse(params[:date])
+      @focus = params[:focus]
+
+      # Prepare to re-render the calendar
+      @calendar = Redmine::Helpers::Calendar.new(old_date, current_language, :week)
+      @users = User.find_all_by_id(params[:users])
+      @users.sort! unless @users.nil? || @users.empty?
+      @projects = Project.find(:all, :conditions => ["identifier in (?)", params[:projects]])
+      @projects.sort! unless @projects.nil? || @projects.empty?
+      do_projects, do_users = true, true
+      if @focus == 'users'
+        do_projects = false
+      end
+      if @focus == 'projects'
+        do_users = false
+      end
+      @entries = get_entries(do_projects, do_users)
+      @availabilities = get_availabilities
+
+      # Re-render the div
+      render :partial => 'calendar', :locals => {:date => @old_date, :calendar => @calendar, :project_id => @project, :projects => @projects, :user_id => @user, :users => @users, :focus => @focus}
+    end
+    
+    # Reschedule to first available slot - consolidating as needed.
+    # TODO: Not yet implemented, does nothing
+    def reschedule
       # Setup params
       project_id = params[:entry_project]
       user_id = params[:entry_user]
