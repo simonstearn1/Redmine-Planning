@@ -5,34 +5,33 @@ schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date)
 %>
 <li class="schedule_entry" id="schedule_entry" style="min-height: <%= 2.7*entry.hours %>em">
 <div title= "<%= ScheduleCompatibility::I18n.lwr(:label_f_hour, :value => entry.hours) %>" style="min-height: <%= 2.7*entry.hours - 1.7 %>em; <%= entry.style(@user.nil? ? entry.user.id : entry.project.id) %>">
-    <%= link_to entry.project, :controller => 'schedules', :action => 'index',
-    :date => entry.date, :project_id => entry.project if @project.nil? %>
+    <%= link_to entry.user, :controller => 'schedules', :action => 'index', :date => entry.date, :user_id => entry.user.id if @user.nil? %>
+    <%= link_to entry.project, :controller => 'schedules', :action => 'index', :date => entry.date, :project_id => entry.project if @project.nil?%>
     <br>
     <% if !@user.nil? && avaHours > 0 %>
     <label>
         <%= l(:label_available_hours) %>:
     </label>
     <%= avaHours.to_f.to_s %>
-    <br>
-    <% end %><% if schedHours > 0 %>
-    <br>
+    <% end %>
+    <% if schedHours > 0 %>
     <label>
         <%= l(:label_scheduled_hours) %>:
     </label>
     <%= schedHours.to_f %>
-    <br>
     <% if !ScheduledIssue.notEmpty?(entry.user.id, entry.project.id, entry.date) %>
     <span id="scheduled_info_link" class= "scheduled_info_link" style="text-decoration: underline; color: blue; cursor: pointer" onclick="scheduledIssuesInfo('<%= entry.date %>', '<%= entry.user.id %>', '<%= entry.project.id %>', event)"><%= l(:label_assigned_issues) %></span>
     <% else %><%= l(:info_no_scheduled_issues) %><% end %>
     <br>
     <% end %>
+    <br>
     <% if (entry.user == User.current ) || User.current.admin? %>
       <%= calendar_date_select_tag ("hidden_date_selector", 
        "", 
       :time => false, 
       :popup => "force", 
       :hidden => true,
-      :image => '/plugin_assets/redmine_planning/images/Calendar-big.png',
+      :image => '/plugin_assets/redmine_planning/images/calendar_1.png',
       :title => "Move this entry to a new date", 
       :onchange => remote_function(   :update => "schedule_display",
                                    :url => {:action => 'move_to', 
@@ -49,7 +48,7 @@ schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date)
 									                    :complete => "Element.hide('ajax-indicator')" ) )%>
 									 
 	   	<%= link_to_remote( 
-		      image_tag('Knife-big.png', :title => "Chop up this entry", :plugin => 'redmine_planning'),
+		      image_tag('application_split.png', :title => "Chop up this entry", :plugin => 'redmine_planning'),
          :url => {:action => 'chop_up', :entry_project => entry.project.id, :entry_user => entry.user.id, :date => entry.date, :project_id => @project, :projects => @projects, :user_id => @user, :focus => @focus, :users => @users},
          :update => "schedule_display",
          :before => "Element.show('ajax-indicator')",
@@ -57,14 +56,12 @@ schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date)
          %>
          
       <%= link_to_remote( 
-          image_tag('Agenda-big.png', :title => "Schedule this entry", :plugin => 'redmine_planning'),
+          image_tag('arrow_refresh.png', :title => "Schedule this entry", :plugin => 'redmine_planning'),
          :url => {:action => 'reschedule', :entry_project => entry.project.id, :entry_user => entry.user.id, :date => entry.date, :project_id => @project, :projects => @projects, :user_id => @user, :focus => @focus, :users => @users},
          :update => "schedule_display",
          :before => "Element.show('ajax-indicator')",
          :complete => "Element.hide('ajax-indicator')")
          %>
     <% end %>
-    <%= "<br/>" if @project.nil? && @user.nil? %><%= link_to entry.user, :controller => 'schedules', :action => 'index',
-    :date => entry.date, :user_id => entry.user.id if @user.nil? %>
 </div>
 </li>

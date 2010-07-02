@@ -13,7 +13,7 @@ Redmine::Plugin.register :redmine_planning do
 	name 'Redmine Planning Plugin'
 	author 'Simon Stearn - based on bits from loader and Brad Beatties schedules plugin'
 	description 'A bunch of (perhaps) useful stuff to allow loading of xml project plans and scheduling against these'
-	version '0.0.2'
+	version '0.0.3'
   
 	project_module :planning_module do
 		permission :view_schedules,  {:schedules => [:index]}, :require => :member

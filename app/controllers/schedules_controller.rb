@@ -823,22 +823,21 @@ class SchedulesController < ApplicationController
       
       # Prepare to re-render the calendar
       @calendar = Redmine::Helpers::Calendar.new(old_date, current_language, :week)
-      @users = User.find_all_by_id(params[:users])
-      @users.sort! unless @users.nil? || @users.empty?
-      @projects = Project.find(:all, :conditions => ["identifier in (?)", params[:projects]])
+
+      @projects = Project.find(:all, :conditions => ['identifier in (?)', params[:projects]])
       @projects.sort! unless @projects.nil? || @projects.empty?
-      do_projects, do_users = true, true
-      if @focus == 'users'
-        do_projects = false
-      end
-      if @focus == 'projects'
-        do_users = false
-      end
-      @entries = get_entries(do_projects, do_users)
+
+      @users = User.find(:all, :conditions => ['id in (?)', params[:users]])
+      @users.sort! unless @users.nil? || @users.empty?
+
+      @entries = get_entries #(do_projects, do_users)
       @availabilities = get_availabilities
 
       # Re-render the div
       render :partial => 'calendar', :locals => {:date => @old_date, :calendar => @calendar, :project => @project, :projects => @projects, :user => @user, :users => @users, :focus => @focus}
+ 
+     rescue ActiveRecord::RecordNotFound
+      render_404
     end
     
     # Take some hours from this entry and move to a new entry some other time - consolidating as needed.
@@ -1107,10 +1106,10 @@ class SchedulesController < ApplicationController
     
     
     # Get schedule entries between two dates for the specified users and projects
-    def get_entries(project_restriction = true, all_users = false)
+    def get_entries(project_restriction = true)
       restrictions = "(date BETWEEN '#{@calendar.startdt}' AND '#{@calendar.enddt}')"
-      unless all_users
-        restrictions << " AND user_id = " + @user.id.to_s unless @user.nil?
+      unless (!@focus.nil? || @users.nil? || @users.empty? )
+        restrictions << " AND user_id IN (" + @users.collect {|user| user.id.to_s }.join(',')+")"
       end
       if project_restriction
         restrictions << " AND project_id IN ("+@projects.collect {|project| project.id.to_s }.join(',')+")" unless @projects.empty?
