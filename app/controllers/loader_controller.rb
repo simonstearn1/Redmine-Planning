@@ -502,7 +502,7 @@ class LoaderController < ApplicationController
         
       rescue
         # Ignore malformed stupid stuff and our own ignorance
-        puts "Malformed resource:" + name
+        puts "Malformed resource:" + name if !name.nil?
       end # begin
     end # do doc.each_element
     # Now map one to t'other
