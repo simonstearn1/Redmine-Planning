@@ -1,9 +1,3 @@
-########################################################################
-# File:    loader_controller.rb                                         #
-#          Updated to apply integration with scheduling                #
-########################################################################
-
-
 class LoaderController < ApplicationController
   
   unloadable
@@ -17,6 +11,8 @@ class LoaderController < ApplicationController
   require 'rexml/document'
   @default_tracker_id = 0
   @default_category = "Project"
+  
+  audit User
   
   # Set up the import view. If there is no task data, this will consist of
   # a file entry field and nothing else. If there is parsed file data (a
@@ -301,7 +297,13 @@ class LoaderController < ApplicationController
       end
     end
   end
-  
+      
+  # Pipework for acts_as_audited
+    
+  def current_user
+    return User.current
+  end
+    
   private
   
   def setup_defaults

@@ -1,0 +1,14 @@
+<%
+  # Convert the output of "structured_issue_list" to JavaScript,
+  # writing out a script which assigns the result to global variable
+  # "issueInfo". JavaScript file "dynamic_issue_list.js" can use data in
+  # this format. Will also set "issueSel" based on array "@issue_selec";
+  # the JavaScript code can use this to pre-select items in its various
+  # selection lists.
+  #
+  # Whoever renders this template as a partial must wrap the output in
+  # "<script>" tags or use whatever other encapsulation mechanism is
+  # appropriate in context.
+-%>
+<%= "var issueInfo = #{ structured_issue_list( @issue_array || [] ).to_json };" <<
+    " var issueSel = #{ structured_issue_list( @issue_selec || [] ).to_json };" %>

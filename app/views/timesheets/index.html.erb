@@ -1,0 +1,92 @@
+      <div class="list_titles">
+        <h1><%= params[ :search ] ? 'Search results' : 'Manage timesheets' %></h1>
+        <h2>Your timesheets</h2>
+      </div>
+      <div class="list_create">
+        <h1>&nbsp;</h1>
+        <h2><%= link_to( "Create new timesheet", { :controller => 'timesheets', :action => :new } ) %></h2>
+      </div>
+
+      <h3 style="clear: both"><%= commit_label( nil, false ) %></h3>
+
+<%=
+  render (
+    {
+      :partial => 'shared/list',
+      :locals  =>
+      {
+        :model          => 'timesheet',
+        :columns        => @columns,
+        :collection     => @user_not_committed_timesheets,
+        :actions_method => 'actions'
+      }
+    }
+  )
+%>
+      <h3><%= commit_label( nil, true ) %></h3>
+
+<%=
+  render (
+    {
+      :partial => 'shared/list',
+      :locals  =>
+      {
+        :model          => 'timesheet',
+        :columns        => @columns,
+        :collection     => @user_committed_timesheets,
+        :actions_method => 'actions'
+      }
+    }
+  )
+%>
+<% if User.current.admin? -%>
+      <h2>All other timesheets</h2>
+      <h3><%= commit_label( nil, false ) %></h3>
+
+<%=
+  render (
+    {
+      :partial => 'shared/list',
+      :locals  =>
+      {
+        :model          => 'timesheet',
+        :columns        => @columns,
+        :collection     => @other_not_committed_timesheets,
+        :actions_method => 'actions'
+      }
+    }
+  )
+%>
+      <h3><%= commit_label( nil, true ) %></h3>
+
+<%=
+  render (
+    {
+      :partial => 'shared/list',
+      :locals  =>
+      {
+        :model          => 'timesheet',
+        :columns        => @columns,
+        :collection     => @other_committed_timesheets,
+        :actions_method => 'actions'
+      }
+    }
+  )
+%>
+<% end -%>
+
+      <h2>Find timesheets</h2>
+
+      <% form_tag request.path, :method => 'get' do %>
+        <%= hidden_field_tag( 'sort',      params[ :sort      ] ) %>
+        <%= hidden_field_tag( 'direction', params[ :direction ] ) %>
+        <%= hidden_field_tag( 'entries',   params[ :entries   ] ) %>
+        <% content_tag :label do %>
+          Search years, week numbers and owner names (TBD - dates / date ranges):
+          <%= text_field_tag :search, params[ :search ] %>
+          <%= submit_tag( 'Go', { :name => 'search_go' } ) %>
+<% if ( params[ :search ] ) -%>
+          <%= submit_tag( 'Clear', { :name => 'search_cancel' } ) %>
+<% end -%>
+        <% end %>
+      <% end %>

@@ -2,7 +2,8 @@ class ScheduledIssue < ActiveRecord::Base
   belongs_to :issue
   belongs_to :user
   belongs_to :project
-  
+  acts_as_audited( :except => [ :lock_version, :updated_at, :created_at, :id ] )
+
 #  before_destroy :before_i_die
 
 

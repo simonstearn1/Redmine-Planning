@@ -16,7 +16,7 @@ class SchedulesController < ApplicationController
   before_filter :save_default, :only => [:default]
   before_filter :fill_entries, :only => [:fill]
 
-
+  audit User
 
   # Included helpers
   include SchedulesHelper
@@ -896,6 +896,12 @@ class SchedulesController < ApplicationController
 
       # Re-render the div
       render :partial => 'calendar', :locals => {:date => @old_date, :calendar => @calendar, :project_id => @project, :projects => @projects, :user_id => @user, :users => @users, :focus => @focus}
+    end
+    
+    # Pipework for acts_as_audited
+    
+    def current_user
+      return User.current
     end
     # ############################################################################
     # Private methods

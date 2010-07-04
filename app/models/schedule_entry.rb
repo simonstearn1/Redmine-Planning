@@ -1,7 +1,8 @@
 class ScheduleEntry < ActiveRecord::Base
 	belongs_to :project
 	belongs_to :user
-	
+	acts_as_audited( :except => [ :lock_version, :updated_at, :created_at, :id ] )
+
 
 	def style(color_id)
 	

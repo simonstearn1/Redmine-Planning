@@ -4,10 +4,16 @@ require_dependency 'issue'
 
 module IssuePlanningPatch
   def self.included(base)
+    
+    base.extend(ClassMethods)
+    
     base.send(:include, InstanceMethods)
 
     base.class_eval do
       unloadable
+      
+      acts_as_audited( :except => [ :lock_version, :updated_on, :created_on, :id , :lft, :rgt, :root_id] )
+        
  #     has_many :scheduled_issues, :dependent => :destroy
       has_many :scheduled_issues
 
@@ -20,8 +26,17 @@ module IssuePlanningPatch
 
   
   module InstanceMethods
+    # Return the 'augmented' issue title; that is, the issue name, with
+    # the immediate parent name pre-pended if available.
 
- private
+    def augmented_title
+      if ( self.parent )
+        return "#{ self.project.name }: #{self.parent.subject}-#{ self.subject }"
+      end
+      return "#{ self.project.name }: #{ self.subject }"
+    end
+
+    private
 
     # Enforce rule that scheduled issues cannot be due prior to work being done
     # TODO: Setup parameter to enable / disable on a per-project setting
@@ -34,7 +49,18 @@ module IssuePlanningPatch
         a_journal.save
       end
     end
-  end    
+
+  end
+  
+  module ClassMethods
+    # Class method - sort an array of tasks by the augmented title.
+    # Since this isn't done by the database, it's slow.
+    
+    def sort_by_augmented_title( list )
+      list.sort! { | x, y | x.augmented_title <=> y.augmented_title }
+    end
+    
+  end
 end
 
 # Add module to Issue
