@@ -1,4 +1,3 @@
-<%= javascript_include_tag( 'dynamic_issue_list', :plugin => 'redmine_planning' ) %>
 <h2>Edit timesheet</h2>
 
 <% if ( ( not @errors.nil? ) and ( not @errors.empty? ) ) -%>
@@ -20,13 +19,15 @@
   </div>
 <% end -%>
 
-<div id="custom">
-  <% form_for( @timesheet, { :html => { :autocomplete => 'off' } } ) do | f | %>
-    <%= f.hidden_field( :lock_version ) %>
-<b>Week <%= @timesheet.week_number %>, <%= @timesheet.year %></b> &ndash;
-  <% data = week_selection( f, @timesheet ) -%>
+<div id="custom"><% form_for( @timesheet, { :html => { :autocomplete => 'off' } } ) do | f | %>
+  <%= f.hidden_field( :lock_version ) %>
+
+  <b>Week <%= @timesheet.week_number %>, <%= @timesheet.year %></b> &ndash;
+<% data = week_selection( f, @timesheet ) -%>
   <%= data.empty? ? 'no other weeks available' : "Alter this timesheet's week number?\n#{ data }" %>
   <%= f.submit( 'Alter', { :disable_with => 'Altering...', :id => nil } ) %>
+
+  <p />
 
   <p />
   <table border="0" cellspacing="0" cellpadding="10" width="100%" class="ts_edit_table">
@@ -119,15 +120,16 @@
       </th>
       <td>&nbsp;&nbsp;</td>
       <td align="left">
-<% @issue_array = issues_for_addition( @timesheet )
-   data        = issue_selection( f, @issue_array ) -%>
-        <%= data.empty? ? 'All issues already included.' : data %>
-<% unless data.empty? -%>
-
-        <script language="javascript" type="text/javascript">
-          <%= render( :partial => 'shared/structured_issue_list' ) %>
-          replaceWithDynamicSelectors( 'timesheet_issue_ids', 'timesheet[issue_ids][]' );
-        </script>
+<%
+  data = degrading_selector(
+    :timesheet_editor,
+    { :form => f, :timesheet => @timesheet, :line_prefix => '        ' }
+  )
+-%>
+<% if ( data.empty? ) -%>
+        All issues already included.
+<% else -%>
+<%= data %>
       </td>
     </tr>
     <tr>
@@ -135,7 +137,6 @@
       <td></td>
       <td>
         <small>
-          <%= data.empty? ? '' :  f.submit( 'Add', { :name => 'add_row', :id => nil } ) %>
           Rows are added to the end of the timesheet and, for multiple
           selections, added in the order listed above.
         </small>
@@ -219,7 +220,7 @@
   </table>
 
   <p align="center">
-    <%= link_to( 'Cancel and show overview', url_for( :controller => 'timesheets', :action => 'new' )) %> or
-    <%= link_to( 'cancel and show timesheet', url_for(:controller => 'timesheets', :action => 'show', :id => @timesheet.id )) %>
+    <%= link_to( 'Cancel and show overview', url_for (:controller => 'timesheets', :action => 'index' )) %> or
+    <%= link_to( 'cancel and show timesheet', url_for (:controller => 'timesheets', :action => 'show', :id => @timesheet.id ) ) %>
   </p>
 <% end -%></div>

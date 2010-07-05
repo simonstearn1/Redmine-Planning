@@ -34,14 +34,14 @@ Redmine::Plugin.register :redmine_planning do
 
 	settings :default => { 'tracker' => -1, 'category' => -1 }, :partial => 'settings/redmine_planning_settings'
 
-	menu :project_menu, :loader, { :controller => 'loader', :action => 'new' },    :caption => 'Import Issues', :after => :new_issue, :param => :project_id
+	menu :project_menu, :loader, { :controller => 'loader', :action => 'new' }, :caption => 'Import Issues', :after => :new_issue, :param => :project_id
 
 	menu :top_menu, :my_schedules, { :controller => 'schedules', :action => 'my_index', :project_id => nil, :user_id => nil }, :after => :my_page, :caption => :label_schedules_my_index, :if => Proc.new { SchedulesController.visible_projects.size > 0 }
 
 	menu :top_menu, :schedules, { :controller => 'schedules', :action => 'index', :project_id => nil, :user_id => nil }, :after => :home, :caption => :label_bulk_schedules_index, :if => Proc.new { SchedulesController.visible_projects.size > 0 }
 
-	menu :top_menu, :timesheets, { :controller => 'timesheets', :action => 'index', :project_id => nil, :user_id => nil }, :after => :projects, :caption => 'Timesheets', :if => Proc.new { SchedulesController.visible_projects.size > 0 }
-
+#  menu :top_menu, :timesheets, { :controller => 'timesheets', :action => 'index', :project_id => nil, :user_id => nil }, :after => :projects, :caption => 'Timesheets', :if => Proc.new { TimesheetsController.visible }
+	menu :top_menu, :timesheets, { :controller => 'timesheets', :action => 'index'}, :after => :projects, :caption => 'Timesheets', :if => Proc.new { User.current.allowed_to?(:timesheet, nil, :global => true) }
 	menu :project_menu, :schedules, { :controller => 'schedules', :action => 'index' }, :caption => :label_schedules_index, :after => :activity, :param => :project_id
 
 end

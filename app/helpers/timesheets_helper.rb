@@ -446,35 +446,513 @@ module TimesheetsHelper
   def structured_issue_list( issue_array )
     pseudo_customer_title = '(None)'
     pseudo_project_title  = '(None)'
-    issue_info             = {}
+    issue_info ={}
 
     unless issue_array.nil? || issue_array.empty?
       Issue.sort_by_augmented_title( issue_array )
 
       issue_array.each do | issue |
         project        = issue.project
-        project_title  = project.name
 
-        project_id  = project.nil?  ? 'none' : project.id;
-
-        if ( issue_info[ :projects ][ project_id ].nil? )
-          issue_info[ customer_id ][ :projects ][ project_id ] = {
-            :title => project_title,
+        if ( issue_info[ :projects ][ project_id ].nil? && project )
+          issue_info[ :projects ][ project_id ] = {
+            :title => project.name,
             :code => project.identifier,
             :issues => {}
           }
         end
 
-        issue_info[ :projects ][ project_id ][ :issues ][ issue.id ] = {
-          :title => issue.subject,
-          :code  => issue.id
-        }
+        if project
+          issue_info[ :projects ][ project_id ][ :issues ][ issue.id ] = {
+            :title => issue.subject,
+            :code  => issue.id
+          }
+        end
       end
     end
 
-    return issue_info
+    return issue_info if issue_info
+    
+    return issue_info[:projects][0][:issues][0] = {:title => 'No issues defined', :code => 0}
+
+  end
+  
+  # Setup default issue list
+  
+  def default_issuelist( timesheet )
+    
+    if timesheet.nil?
+      return []
+    end
+    
+    week  = timesheet.week_number - 1
+    year = timesheet.year
+    
+    if week == 0
+      year -= 1
+      week = Timesheet.get_last_week_number( year )
+    end
+    
+    issues = Issue.find(:all, :conditions => ['id in (select issue_id from time_entries where tweek = ? and tyear = ? and user_id = ?)', week, year, timesheet.user_id])    
+
+    issues = issues.nil? ? [] : issues
+
+    return issues
+
+  end 
+  
+    # Generate a YUI tree issue selector. Pass a form builder object in the first
+  # parameter (e.g. "bar" in "form_for @foo do | bar |"). The "object_name"
+  # field is used to generate a unique ID and name for a hidden element which
+  # carries IDs of selected YUI tree nodes, in the form "name[issue_ids][]" - as
+  # used by non-JS SELECT lists elsewhere. In the form submission processing
+  # code, you must handle the use of special IDs in the YUI tree ("P" prefix
+  # for Projects, "C" prefix for Customers, no prefix for issues).
+  #
+  # In the next parameter optionally pass an options hash with keys and values
+  # as shown below; any omitted key/value pair results in the described default
+  # value being used instead.
+  #
+  #   Key              Meaning
+  #   =========================================================================
+  #   :inactive        If 'true', only inactive issues, customers and projects
+  #                    are shown in the selector. By default, only active items
+  #                    will be shown.
+  #
+  #   :restricted_by   The issue/project/customer list for currently logged in
+  #                    users who are restricted is always restricted by that
+  #                    user's permitted issue list no matter what you set here.
+  #                    If the current user is privileged, though, then passing
+  #                    in a User object results in restriction by that user's
+  #                    permitted issue list. By default there is no restriction
+  #                    so for privileged currently logged in users, all issues
+  #                    would be shown.
+  #
+  #   :included_issues  If you know up-front a full list of issues to show, then
+  #                    pass them in here. Only items in the included list will
+  #                    be shown. IDs get passed to the XHR handler, among other
+  #                    things. This is NOT a security feature - see
+  #                    ":restricted_by" for that.
+  #
+  #   :selected_issues  An array of issues to be initially selected in the tree.
+  #                    May be empty. By default no issues are selected. Ideally
+  #                    the list should include no issues that the current user
+  #                    or 'restricted_by' key would hide, but if it does, they
+  #                    simply won't be shown or selected and only the issue IDs
+  #                    will appear in HTML output.
+  #
+  #   :suffix_html     Beneath the text area gadget listing selected issues is
+  #                    a "Change..." link which pops up the Leightbox overlay
+  #                    containing the YUI tree. If you want any extra HTML
+  #                    inserted directly after the "</a>" of this link but
+  #                    before the (hidden) DIV enclosing the tree, use this
+  #                    option to include it. To keep things tidy, ensure that
+  #                    the string is terminated by a newline ("\n") character.
+  #
+  #   :change_text     Speaking of the "Change..." link - alter its text with
+  #                    this option, or omit for the default "Change..." string.
+  #
+  #   :params_name     Name to use in params instead of "issue_ids", so that
+  #                    instead of reading "params[form.object_name][:issue_ids]"
+  #                    in the controller handling the form submission, you read
+  #                    the params entry corresponding to the given name.
+  #
+  # See also "issuehelp_degrading_selector" for JS/non-JS degrading code.
+  #
+  def tree_selector( form, options = {} )
+
+    inactive       = options.delete( :inactive       )
+    restricted_by  = options.delete( :restricted_by  )
+    included_issues = options.delete( :included_issues )
+    selected_issues = options.delete( :selected_issues ) || []
+    suffix_html    = options.delete( :suffix_html    ) || ''
+    change_text    = options.delete( :change_text    ) || 'Change...'
+    params_name    = options.delete( :params_name    ) || :issue_ids
+
+    # Callers may generate trees restricted by the current user, but if that
+    # user is themselves privileged their restricted issue list will be empty
+    # (because they can see anything). The simplest way to deal with this is
+    # to clear the restricted user field in such cases.
+
+#    restricted_by = nil unless ( restricted_by.nil? || restricted_by.restricted? )
+
+    # Based on the restricted issue list - or otherwise - try to get at the root
+    # customer array as easily as possible, trying to avoid pulling all issues
+    # out of the database. This is a bit painful either way, but usually a
+    # restricted user will have a relatively small set of issues assigned to
+    # them so doing the array processing in Ruby isn't too big a deal.
+
+#    if ( @current_user.restricted? )
+#      permitted_issues = User.current.active_permitted_issues()
+#    else
+#      permitted_issues = restricted_by.active_permitted_issues() unless ( restricted_by.nil? )
+#   end
+
+    # Maybe more rules here..
+    permitted_issues = Timesheet.default_issues
+
+    unless ( included_issues.nil? )
+      if ( permitted_issues.nil? )
+        permitted_issues  = included_issues
+      else
+        permitted_issues &= included_issues
+      end
+    end
+
+    root_projects  = permitted_issues.map { | issue    | issue.project     }.uniq
+    root_customers = root_projects.reject { | project | !project.parent_id.nil? }.uniq
+
+    # Now take the selected issue list and do something similar to get at the
+    # selected project and customer IDs so we can build a complete list of the
+    # node IDs to be initially expanded and checked in the YUI tree. The
+    # customer list is sorted so that when the YUI tree starts expanding nodes,
+    # it does it in display order from top to bottom - this looks better than
+    # an arbitrary expansion order.
+
+    selected_projects     = selected_issues.map    { | issue    | issue.project     }.uniq
+    selected_customers    = selected_projects.reject { | project | !project.parent_id.nil? }.uniq
+
+    selected_issue_ids     = selected_issues.map   { | item | item.id         }
+    selected_project_ids  = selected_projects.map  { | item | "P#{ item.id }" }
+    selected_customer_ids = selected_customers.map { | item | "C#{ item.id }" }
+
+    selected_ids = selected_customer_ids + selected_project_ids + selected_issue_ids
+
+    # Turn an included issue list into IDs too, if present
+
+    included_ids = ( included_issues || [] ).map { | item | item.id }
+
+    # Generate the root node data and extra XHR parameters to pass to the tree
+    # controller in 'tree_controller.rb'.
+
+    roots = root_customers.map do | customer |
+      {
+        :label  => customer.title,
+        :isLeaf => false,
+        :id     => "C#{ customer.id }"
+      }
+    end
+
+    data_for_xhr_call  = []
+    data_for_xhr_call << 'inactive' if ( inactive )
+    data_for_xhr_call << "restrict,#{ restricted_by.id }" unless ( restricted_by.nil? )
+    data_for_xhr_call << "include,#{ included_ids.join( '_' ) }" unless ( included_ids.empty? )
+
+    # Create and (implicitly) return the HTML.
+
+    id   = "#{ form.object_name }_#{ params_name }"
+    name = "#{ form.object_name }[#{ params_name }][]"
+    tree = yui_tree(
+      :multiple             => true,
+      :target_form_field_id => id,
+      :target_name_field_id => "#{ id }_text",
+      :name_field_separator => "\n", # Yes, a literal newline character
+      :name_include_parents => ' &raquo; ',
+      :name_leaf_nodes_only => true,
+      :form_leaf_nodes_only => true,
+      :expand               => selected_ids,
+      :highlight            => selected_ids,
+      :propagate_up         => true,
+      :propagate_down       => true,
+      :root_collection      => roots,
+      :data_for_xhr_call    => data_for_xhr_call.join( ',' ),
+      :div_id               => 'yui_tree_container_' << id
+    ).gsub( /^/, '  ' )
+    html = <<HTML
+<textarea disabled="disabled" rows="5" cols="60" class="tree_selector_text" id="#{ id }_text">issue data loading...</textarea>
+<br />
+<a href="#leightbox_tree_#{ id }" rel="leightbox_tree_#{ id }" class="lbOn">#{ change_text }</a>
+#{ suffix_html }<div id="leightbox_tree_#{ id }" class="leightbox">
+  <a href="#" class="lbAction" rel="deactivate">Close</a>
+  #{ issuehelp_billable_help }
+  <p />
+  #{ hidden_field_tag( id, selected_issue_ids.join( ',' ), { :name => name } ) }
+#{ tree }
+  <a href="#" class="lbAction" rel="deactivate">Close</a>
+</div>
+HTML
   end
 
+  # Create a degrading issue selector using either a YUI tree or a SELECT list,
+  # but not both. The latter has high database load. The former has greater
+  # client requirements.
+  #
+  # The use cases for issue selectors in Track Record are so varied that very
+  # specific cases are handled with special-case code and HTML output may
+  # include extra text to help the user for certain edge conditions, such as
+  # a lack of any available issues (in a timesheet editor, this may be because
+  # all issues are already added to the timesheet; for a user's choice of the
+  # default list of issues to show in timesheets, this may be because the user
+  # has no permission to view any issues; when configuring the issues which a
+  # restricted user is able to see, this may be because no active issues exist).
+  #
+  # As a result, pass the reason for calling in the first parameter and an
+  # options list in the second.
+  #
+  # Supported reasons are symbols and listsed in the 'case' statement in the
+  # code below. Each is preceeded by comprehensive comments describing the
+  # mandatory and (if any) optional key/value pairs which should go into the
+  # options hash. Please consult these comments for more information.
+  #
+  # The following global options are also supported (none are mandatory):
+  #
+  #   Key           Value
+  #   =====================================================================
+  #   :line_prefix  A string to insert at the start of each line of output
+  #                 - usually spaces, used if worried about the indentation
+  #                 of the overall view HTML.
+  #
+  def degrading_selector( reason, options )
+    output = ''
+    form   = options.delete( :form )
+    user   = options.delete( :user )
+
+    case reason
+
+      # Generate a selector used to add issues to a given timesheet. Includes a
+      # issue selector and "add" button which submits to the given form with
+      # name "add_row". The timesheet and form are specified in the options:
+      #
+      #   Key         Value
+      #   =====================================================================
+      #   :form       Prevailing outer form, e.g. the value of "f" in a view
+      #               which has enclosed the call in "form_for :foo do | f |".
+      #
+      #               Leads to "issue_ids" being invoked on the model associated
+      #               with the form to determine which items, if any, must be
+      #               initially selected for lists in the non-JS page version.
+      #
+      #   :timesheet  Instance of the timesheet being edited - used to find out
+      #               which issues are already included in the timesheet and
+      #               thus which, if any, should be offered in the selector.
+      #
+      # NOTE: An empty string is returned if all issues are already included in
+      # the timesheet.
+      #
+      when :timesheet_editor
+        issues = issues_for_addition( options[ :timesheet ] )
+
+        unless ( issues.empty? )
+
+          if ( session[ :javascript ].nil? )
+            Issue.sort_by_augmented_title( issues )
+            output << collection_select( form, :issue_ids, issues, :id, :augmented_title )
+            output << '<br />'
+            output << form.submit( 'Add', { :name => 'add_row', :id => nil } )
+          else
+            output << tree_selector(
+              form,
+              {
+                :included_issues => issues,
+                :change_text    => 'Choose issues...',
+                :suffix_html    => " then #{ form.submit( 'add them', { :name => 'add_row', :id => nil } ) }\n"
+              }
+            )
+          end
+
+        end
+
+      # Generate a selector used to add issues to a given report. The report and
+      # form are specified in the following options:
+      #
+      #   Key        Value
+      #   =====================================================================
+      #   :form      Prevailing outer form, e.g. the value of "f" in a view
+      #              which has enclosed the call in "form_for :foo do | f |".
+      #
+      #              Leads to "issue_ids" being invoked on the model associated
+      #              with the form to determine which items, if any, must be
+      #              initially selected for lists in the non-JS page version.
+      #
+      #   :report    Instance of the report being created - used to find out
+      #              which issues are already included in the report (for form
+      #              resubmissions, e.g. from validation failure).
+      #
+      #   :inactive  If 'true', the selector is generated for inactive issues
+      #              only. If omitted or 'false', only active issues are shown.
+      #
+      #   :name      A name to use instead of "issue_ids" in the form submission
+      #              - optional, required if you want multiple selectors in the
+      #              same form.
+      #
+      # NOTE: All edge case conditions (no issues, etc.) are handled internally
+      # with relevant messages included in the HTML output for individual
+      # selectors, but the caller ought to check that at least *some* issues can
+      # be chosen before presenting the user with a report generator form.
+      #
+      when :report_generator
+        report =   options[ :report   ]
+        active = ( options[ :inactive ] != true )
+        field  = active ? :active_issue_ids : :inactive_issue_ids
+
+        if ( session[ :javascript ].nil? )
+          issues = active ? issue.active() : issue.inactive()
+          count = issues.length
+        else
+          issues = active ? report.active_issues : report.inactive_issues
+          count = @current_user.all_permitted_issues.count
+        end
+
+        if ( count.zero? )
+
+          hint = active ? :active : :inactive
+          output << "No #{ hint } issues are available."
+
+        else
+
+          if ( session[ :javascript ].nil? )
+            issue.sort_by_augmented_title( issues )
+            output << apphelp_collection_select(
+              form,
+              field,
+              issues,
+              :id,
+              :augmented_title
+            )
+          else
+            output << issuehelp_tree_selector(
+              form,
+              {
+                :selected_issues => issues,
+                :params_name    => field,
+                :inactive       => ! active
+              }
+            )
+          end
+        end
+
+      # Generate a selector which controls the default issue list shown in
+      # new timesheets.
+      #
+      #   Key    Value
+      #   =====================================================================
+      #   :user  Instance of User model for the user for whom default timesheet
+      #          options are being changed.
+      #
+      #   :form  Prevailing outer form, e.g. the value of "f" in a view
+      #          which has enclosed the call in "form_for :foo do | f |".
+      #          Typically this is used by a User configuration view, though,
+      #          where a nested set of fields are being built via something
+      #          like "fields_for :control_panel do | cp |". In such a case,
+      #          use "cp" for the ":form" option's value.
+      #
+      #          This leads to "issue_ids" being invoked on the model associated
+      #          with the form to determine which items in the selection list,
+      #          if any, must be initially selected in the non-JS page version.
+      #
+      # NOTE: All edge case conditions (no issues, etc.) are handled internally
+      # with relevant messages included in the HTML output.
+      #
+      when :user_default_issue_list
+
+        if ( user.active_permitted_issues.count.zero? )
+
+          # Warn that the user has no permission to see any issues at all.
+
+          output << "This account does not have permission to view\n"
+          output << "any active issues.\n"
+          output << "\n\n"
+          output << "<p>\n"
+
+          # If the currently logged in user is unrestricted, tell them how to
+          # rectify the above problem. Otherwise, tell them to talk to their
+          # system administrator.
+
+          if ( @current_user.restricted? )
+            output << "  Please contact your system administrator for help.\n"
+          else
+            output << "  To enable this section, please assign issues to\n"
+            output << "  the user account with the security settings above\n"
+            output << "  and save your changes. Then edit the user account\n"
+            output << "  again to see the new permitted issue list.\n"
+          end
+
+          output << "</p>"
+
+        else
+
+          if ( session[ :javascript ].nil? )
+            issues = user.active_permitted_issues
+            issue.sort_by_augmented_title( issues )
+            output << apphelp_collection_select( form, :issue_ids, issues, :id, :augmented_title )
+          else
+            output << issuehelp_tree_selector(
+              form,
+              {
+                :restricted_by  => ( user.restricted? ) ? user : nil,
+                :selected_issues => user.control_panel.issues
+              }
+            )
+          end
+
+        end
+
+      # Generate a selector which controls the list of issues the user is
+      # permitted to see. Mandatory options:
+      #
+      #   Key    Value
+      #   =====================================================================
+      #   :user  Instance of User model for the user to whom issue viewing
+      #          permission is being granted or revoked.
+      #
+      #   :form  Prevailing outer form, e.g. the value of "f" in a view
+      #          which has enclosed the call in "form_for :foo do | f |".
+      #
+      #          This leads to "issue_ids" being invoked on the model associated
+      #          with the form to determine which items in the selection list,
+      #          if any, must be initially selected in the non-JS page version.
+      #
+      # NOTE: All edge case conditions (no issues, etc.) are handled internally
+      # with relevant messages included in the HTML output.
+      #
+      when :user_permitted_issue_list
+        return '' if ( @current_user.restricted? ) # Privileged users only!
+
+        if ( issue.active.count.zero? )
+
+          output << "There are no issues currently defined. Please\n"
+          output << "#{ link_to( 'create at least one', new_issue_path() ) }."
+
+        else
+
+          if ( session[ :javascript ].nil? )
+            issues = issue.active()
+            issue.sort_by_augmented_title( issues )
+            output << apphelp_collection_select( form, :issue_ids, issues, :id, :augmented_title )
+          else
+
+            # Don't use "user.[foo_]permitted_issues" here as we *want* an empty
+            # list for privileged accounts where no issues have been set up.
+
+            output << issuehelp_tree_selector(
+              form,
+              { :selected_issues => user.issues }
+            )
+          end
+
+          if ( user.admin? )
+            output << "\n\n"
+            output << "<p>\n"
+            output << "  This list is only enforced for users with a\n"
+            output << "  'Normal' account type. It is included here\n"
+            output << "  in case you are intending to change the account\n"
+            output << "  type and want to assign issues at the same time.\n"
+            output << "</p>"
+          end
+
+        end
+    end
+
+    # All done. Indent or otherwise add a prefix to each line of output if
+    # so required by the options and return the overall result.
+
+    line_prefix = options.delete( :line_prefix )
+    output.gsub!( /^/, line_prefix ) unless ( output.empty? || line_prefix.nil? )
+
+    return output
+  end
+  
+  
 #
 # Handle mis-hacked meta-programming.. probably a smarter way to do this..
 #

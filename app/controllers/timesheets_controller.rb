@@ -214,7 +214,7 @@ class TimesheetsController < ApplicationController
 
   def show
     @timesheet = Timesheet.find( params[ :id ] )
-    unless (@timesheet and ( @current_user.manager? or @timesheet.user_id == User.current.id ) )
+    unless (@timesheet and ( User.current.admin? or @timesheet.user_id == User.current.id ) )
       flash[ :warning ] = 'Action not permitted'
       redirect_to( {:controller => 'timesheets', :action => 'show' } )
       return
@@ -228,6 +228,15 @@ class TimesheetsController < ApplicationController
     
   def current_user
     return User.current
+  end
+  
+  def self.visible
+   
+    if Project.find(:first, :conditions => Project.allowed_to_condition(User.current, :timesheet)).nil?
+      return false
+    end
+    
+    return true
   end
     
 private

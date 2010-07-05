@@ -94,11 +94,11 @@ class Timesheet < ActiveRecord::Base
 
   def issues_are_active_and_permitted()
     self.issues.each do | issue |
-      errors.add_to_base( "issue '#{ issue.augmented_title }' is no longer active and cannot be included" ) unless issue.active
+      errors.add_to_base( "issue '#{ issue.augmented_title }' is no longer active and cannot be included" ) unless issue.status.is_closed
 
-      if ( self.user.restricted? )
-        errors.add_to_base( "Inclusion of issue '#{ issue.augmented_title }' is no longer permitted" ) unless self.user.issue_ids.include?( issue.id )
-      end
+#      if ( !self.user.admin? )
+#        errors.add_to_base( "Inclusion of issue '#{ issue.augmented_title }' is no longer permitted" ) unless self.user.issue_ids.include?( issue.id )
+#      end
     end
   end
 
@@ -415,18 +415,34 @@ class Timesheet < ActiveRecord::Base
       return date.strftime( '%d-%b-%Y') # Or ISO: '%Y-%m-%d'
     end
   end
+  
+  def self.default_issues
+    # All visible Activity tracker issues that are expected to be worked during this time period
+    # MAYBE: remove issues where total actuals >= estimated or something clever-er
+    issues=[]
+    
+    default_tracker_id = Tracker.find(:first, :conditions => [ "id = ?", Setting.plugin_redmine_planning['tracker']]).id
+    
+    Issue.visible.each do | issue |
+      if ( issue.tracker.id == default_tracker_id ) &&  
+        (issue.start_date.nil? || issue.start_date >= Date.today ) && 
+        (issue.due_date.nil? || (issue.due_date + 7) >= Date.today )
+        issues << issue
+      end
+    end
+    
+    return issues
+  end
 
 private
 
   def add_default_rows
     
-    # All visible Activity tracker issues
+    # All visible Activity tracker issues that are expected to be worked during this time period
+    # MAYBE: remove issues where total actuals >= estimated
     
-    default_tracker_id = Tracker.find(:first, :conditions => [ "id = ?", Setting.plugin_redmine_planning['tracker']]).id
-    Issue.visible.each do | issue |
-      if issue.tracker.id == default_tracker_id
-        add_row( issue )
-      end
+    Timesheet.default_issues.each do |issue |
+      add_row( issue )
     end
   end
 
