@@ -322,7 +322,7 @@ class LoaderController < ApplicationController
     # Category
     #
     @default_category = Setting.plugin_redmine_planning['category']
-    
+    @default_category = @default_category.slice(0, 30) if @default_category
     # We must have a default tracker, but we only require a default category if
     # none is set for one or more tasks in the project file.
     if ( @default_tracker_id.nil? )
@@ -333,10 +333,14 @@ class LoaderController < ApplicationController
   
   # Create new category if not already existing
   def confirm_category (issue_category)
+
     # Fudge category if none in XML
     if (issue_category.nil?) 
       issue_category = @default_category
+    else
+      issue_category = issue_category.slice(0, 30) # Redmine validation
     end
+    
     if (issue_category.nil?) # Still ?!
       flash[ :error ] = 'No valid default Issue Category and none set for some issues. Please ask your System Administrator to resolve this (or set for all tasks in the XML).'
       return false
