@@ -13,6 +13,11 @@
   <%= text_field_tag 'settings[depth]', @settings['depth'] %>
 </p>
 <p>
+  <label>Make schedule entries ?</label>
+  <%= select_tag 'settings[schedule]',
+    options_for_select( ["Y", "N"], @settings['schedule']) %>
+</p>
+<p>
   <label>Attempt to fit schedule (i.e. basic resource leveling)</label>
   <%= select_tag 'settings[level]',
     options_for_select( ["Y", "N"], @settings['level']) %>

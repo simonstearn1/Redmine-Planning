@@ -532,7 +532,7 @@ class LoaderController < ApplicationController
   # and re-using existing objects where this fits
   def ensure_issue_scheduled (existing_issue, fit)
     
-    return true if existing_issue.nil? || existing_issue.assigned_to_id.nil?
+    return true if existing_issue.nil? || existing_issue.assigned_to_id.nil? || Setting.plugin_redmine_planning['schedule']=="N"
 
     existing_scheduled_issues = ScheduledIssue.all(:conditions => ["user_id = ? AND issue_id = ?", existing_issue.assigned_to_id, existing_issue.id]);
     sum = 0
@@ -553,13 +553,11 @@ class LoaderController < ApplicationController
   def schedule_additional_issue_time(existing_issue, hours, fit)
     start_date = existing_issue.start_date
     due_date = existing_issue.due_date
-    
-    default_available_hours = ScheduleDefault.find_by_user_id(existing_issue.assigned_to_id)[:weekday_hours]
-    
-    # Check sum(default_available_hours) > 0 (or assume [0,8,8,8,8,8,0] as a default )
-    # TODO: implement smarter resource calendars including regional holidays..
-    if default_available_hours.sum == 0
-      default_available_hours = [0,8,8,8,8,8,0]
+    default_available_hours = [0,8,8,8,8,8,0]      
+
+    schedule_default = ScheduleDefault.find_by_user_id(existing_issue.assigned_to_id)
+    if schedule_default && schedule_default[:weekday_hours].sum > 0
+      default_available_hours = schedule_default[:weekday_hours]
     end
     
     # Step through range allocating out max available (ignoring current schedule)
