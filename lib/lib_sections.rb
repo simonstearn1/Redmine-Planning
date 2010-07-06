@@ -29,6 +29,7 @@ module LibSections
   # so, else 'false'.
 
   def sections_new_section?( issue )
+    type = issue.class
     this_project  = issue.project
 
     changed = ( this_project != @sections_last_project )

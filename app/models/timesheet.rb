@@ -18,9 +18,9 @@ class Timesheet < ActiveRecord::Base
 
   belongs_to( :user )
 
-  has_many( :timesheet_rows, { :dependent => :destroy, :order => :position } )
-  has_many( :issues,         { :through   => :timesheet_rows               } )
-  has_many( :time_entries,   { :through   => :timesheet_rows               } )
+  has_many( :timesheet_rows, { :dependent => :destroy, :order => :position           } )
+  has_many( :issues,         { :through   => :timesheet_rows                         } )
+  has_many( :time_entries,   { :through   => :timesheet_rows, :dependent => :destroy } )
 
   # I want to use attr_accessible as follows:
   # 

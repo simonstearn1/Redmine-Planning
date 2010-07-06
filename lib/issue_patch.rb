@@ -14,10 +14,10 @@ module IssuePlanningPatch
       
       acts_as_audited( :except => [ :lock_version, :updated_on, :created_on, :id , :lft, :rgt, :root_id] )
         
- #     has_many :scheduled_issues, :dependent => :destroy
       has_many :scheduled_issues
 
       before_validation :adjust_due_date
+      before_destroy :tidy_up_dependents
 
     end
 
@@ -37,6 +37,29 @@ module IssuePlanningPatch
     end
 
     private
+    
+    def tidy_up_dependents
+
+      # Cant happen if time has been booked
+      time_entries = TimeEntry.find(:first, :conditions => ['issue_id = ?', self.id])
+      if time_entries
+        raise "Cannot be deleted because time has been booked against it"
+        return false
+      end
+
+      # Keep project assignment / schedule and elim issue connection
+#      scheduled_issues = ScheduledIssue.find(:all, :conditions => ['issue_id = ?', self.id])
+      scheduled_issues = self.scheduled_issues
+      if scheduled_issues
+        scheduled_issues.each do |scheduled_issue |
+          scheduled_issue.issue_id = 0
+          scheduled_issue.save!
+        end
+      end
+      
+      return true
+      
+    end
 
     # Enforce rule that scheduled issues cannot be due prior to work being done
     # TODO: Setup parameter to enable / disable on a per-project setting

@@ -34,7 +34,7 @@ schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date)
       :image => '/plugin_assets/redmine_planning/images/calendar_1.png',
       :title => "Move this entry to a new date", 
       :onchange => remote_function(   :update => "schedule_display",
-                                   :url => {:action => 'move_to', 
+                                      :url => {:action => 'move_to', 
                                            :entry_project => entry.project.id, 
                                            :entry_user => entry.user.id, 
                                            :date => entry.date, 
@@ -43,7 +43,7 @@ schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date)
                                            :user_id => @user, 
                                            :focus => @focus, 
                                            :users => @users},
-                                   :with => "'new_date='+$F(this)",
+                                      :with => "'new_date='+$F(this)",
 									                    :before => "Element.show('ajax-indicator')",
 									                    :complete => "Element.hide('ajax-indicator')" ) )%>
 									 
