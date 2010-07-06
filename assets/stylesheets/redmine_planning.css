@@ -238,6 +238,10 @@ table.timesheet_chart td.not_committed {
   background: #fa7;
 }
 
+table.timesheet_chart td.overdue {
+  background: #990000;
+}
+
 table.timesheet_chart td.timesheet_chart_month {
   font-weight: bold;
   padding-right: 20px;
@@ -324,6 +328,7 @@ table.ts_show_table tr.group_gap th {
   margin: 0;
   height: 3px;
 }
+
 
 /* Committed / not committed timesheet labels; active / not active
  * items; overrunning / not overrunning labels.

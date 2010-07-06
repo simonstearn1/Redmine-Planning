@@ -13,7 +13,7 @@ module TimesheetsHelper
                 '<span class="timesheet_not_committed">Not Committed</span>'
   end
   
-# Return a year chart for the given year. This is a complete table of
+  # Return a year chart for the given year. This is a complete table of
   # months down the left and week numbers with dates of the first week in
   # individual cells along the monthly rows. Months indicate the month of
   # the first day of the week in that year, so in week 1 will often be for
@@ -83,21 +83,27 @@ module TimesheetsHelper
         if ( timesheet )
           if ( timesheet.committed )
             bgcolor = ' bgcolor="#77cc77" class="committed"'
-            content = link_to( content,  url_for( :controller => 'timesheets' ) )
+            content = link_to( content,  url_for( :controller => 'timesheets' ))
           else
             bgcolor = ' bgcolor="#ffaa77" class="not_committed"'
-            content = link_to( content, url_for( :controller => 'timesheets', :action => 'edit', :id => timesheet.id ) )
+            content = link_to( content, url_for( :controller => 'timesheets', :action => 'edit', :id => timesheet.id ))
           end
         else
-          content = button_to(
-            content,
-            {
-              :action      => :create,
-              :method      => :post,
-              :year        => year,
-              :week_number => week[ :week ]
-            }
-          )
+          if Timesheet.overdue(year, week [:week] )
+            bgcolor = ' bgcolor="#CC0000" class="overdue"'
+            content = link_to( content, url_for( :controller => 'timesheets', :action => 'create', :year => year, :week => week, :week_number => week[ :week ], :method => :post ))
+          else
+            content = button_to(
+              content,
+              {
+                :action      => :create,
+                :method      => :post,
+                :year        => year,
+                :week_number => week[ :week ]
+              }
+            )
+          end
+
         end
 
         output << "    <td align='center'#{ bgcolor }>#{ content }</td>\n"
@@ -109,10 +115,11 @@ module TimesheetsHelper
     return output << '</table>'
   end
   
+  
   #
   #
   
- def list_header( structure, model, actions_method )
+  def list_header( structure, model, actions_method )
     output = "        <tr valign=\"middle\" align=\"left\" class=\"info\">\n"
 
     structure.each_index do | index |

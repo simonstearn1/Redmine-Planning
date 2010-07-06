@@ -416,6 +416,18 @@ class Timesheet < ActiveRecord::Base
     end
   end
   
+  def self.overdue(year, week_number)
+    
+    this_date = Timesheet.date_for(year, week_number, 6, true)
+    
+    if (Date.today - this_date).to_i > 0
+      return true
+    end
+    
+    return false
+    
+  end
+  
   def self.default_issues
     # All visible Activity tracker issues that are expected to be worked during this time period
     # MAYBE: remove issues where total actuals >= estimated or something clever-er
