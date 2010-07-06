@@ -564,7 +564,7 @@ module TimesheetsHelper
   #                    in the controller handling the form submission, you read
   #                    the params entry corresponding to the given name.
   #
-  # See also "issuehelp_degrading_selector" for JS/non-JS degrading code.
+  # See also "degrading_selector" for JS/non-JS degrading code.
   #
   def tree_selector( form, options = {} )
 
@@ -581,7 +581,7 @@ module TimesheetsHelper
     # (because they can see anything). The simplest way to deal with this is
     # to clear the restricted user field in such cases.
 
-#    restricted_by = nil unless ( restricted_by.nil? || restricted_by.restricted? )
+    restricted_by = nil #unless ( restricted_by.nil? || restricted_by.restricted? )
 
     # Based on the restricted issue list - or otherwise - try to get at the root
     # customer array as easily as possible, trying to avoid pulling all issues
@@ -608,6 +608,8 @@ module TimesheetsHelper
 
     root_projects  = permitted_issues.map { | issue    | issue.project     }.uniq
     root_customers = root_projects.reject { | project | !project.parent_id.nil? }.uniq
+    root_projects.reject! { | project | project.parent_id.nil? }
+
 
     # Now take the selected issue list and do something similar to get at the
     # selected project and customer IDs so we can build a complete list of the
@@ -618,10 +620,11 @@ module TimesheetsHelper
 
     selected_projects     = selected_issues.map    { | issue    | issue.project     }.uniq
     selected_customers    = selected_projects.reject { | project | !project.parent_id.nil? }.uniq
+    selected_projects.reject! { | project | project.parent_id.nil? }
 
-    selected_issue_ids     = selected_issues.map   { | item | item.id         }
-    selected_project_ids  = selected_projects.map  { | item | "P#{ item.id }" }
-    selected_customer_ids = selected_customers.map { | item | "C#{ item.id }" }
+    selected_issue_ids     = selected_issues.map   { | item | item.id        }
+    selected_project_ids  = selected_projects.map  { | item | "#{ item.id }" }
+    selected_customer_ids = selected_customers.map { | item | "#{ item.id }" }
 
     selected_ids = selected_customer_ids + selected_project_ids + selected_issue_ids
 
@@ -634,15 +637,26 @@ module TimesheetsHelper
 
     roots = root_customers.map do | customer |
       {
-        :label  => customer.title,
+        :label  => customer.name,
         :isLeaf => false,
-        :id     => "C#{ customer.id }"
+        :id     => "#{ customer.identifier }"
       }
     end
+    
+    if roots.nil? || roots.empty?
+      roots = root_projects.map do | project |
+        {
+          :label  => project.name,
+          :isLeaf => false,
+          :id     => "#{ project.identifier }"
+        }
+      end
+    end
+
 
     data_for_xhr_call  = []
     data_for_xhr_call << 'inactive' if ( inactive )
-    data_for_xhr_call << "restrict,#{ restricted_by.id }" unless ( restricted_by.nil? )
+ #   data_for_xhr_call << "restrict,#{ restricted_by.id }" unless ( restricted_by.nil? )
     data_for_xhr_call << "include,#{ included_ids.join( '_' ) }" unless ( included_ids.empty? )
 
     # Create and (implicitly) return the HTML.
@@ -671,7 +685,6 @@ module TimesheetsHelper
 <a href="#leightbox_tree_#{ id }" rel="leightbox_tree_#{ id }" class="lbOn">#{ change_text }</a>
 #{ suffix_html }<div id="leightbox_tree_#{ id }" class="leightbox">
   <a href="#" class="lbAction" rel="deactivate">Close</a>
-  #{ issuehelp_billable_help }
   <p />
   #{ hidden_field_tag( id, selected_issue_ids.join( ',' ), { :name => name } ) }
 #{ tree }
@@ -741,7 +754,8 @@ HTML
 
         unless ( issues.empty? )
 
-          if ( session[ :javascript ].nil? )
+# TODO - detect browser javascript
+          if ( false )
             Issue.sort_by_augmented_title( issues )
             output << collection_select( form, :issue_ids, issues, :id, :augmented_title )
             output << '<br />'
@@ -792,7 +806,8 @@ HTML
         active = ( options[ :inactive ] != true )
         field  = active ? :active_issue_ids : :inactive_issue_ids
 
-        if ( session[ :javascript ].nil? )
+# TODO - detect browser javascript
+          if ( false )
           issues = active ? issue.active() : issue.inactive()
           count = issues.length
         else
@@ -807,7 +822,8 @@ HTML
 
         else
 
-          if ( session[ :javascript ].nil? )
+# TODO - detect browser javascript
+          if ( false )
             issue.sort_by_augmented_title( issues )
             output << apphelp_collection_select(
               form,
@@ -817,7 +833,7 @@ HTML
               :augmented_title
             )
           else
-            output << issuehelp_tree_selector(
+            output << tree_selector(
               form,
               {
                 :selected_issues => issues,
@@ -852,7 +868,7 @@ HTML
       #
       when :user_default_issue_list
 
-        if ( user.active_permitted_issues.count.zero? )
+        if ( Issue.default.count.zero? )
 
           # Warn that the user has no permission to see any issues at all.
 
@@ -865,7 +881,7 @@ HTML
           # rectify the above problem. Otherwise, tell them to talk to their
           # system administrator.
 
-          if ( @current_user.restricted? )
+          if ( !User.current.admin? )
             output << "  Please contact your system administrator for help.\n"
           else
             output << "  To enable this section, please assign issues to\n"
@@ -878,12 +894,13 @@ HTML
 
         else
 
-          if ( session[ :javascript ].nil? )
+# TODO - detect browser javascript
+          if ( false )
             issues = user.active_permitted_issues
             issue.sort_by_augmented_title( issues )
             output << apphelp_collection_select( form, :issue_ids, issues, :id, :augmented_title )
           else
-            output << issuehelp_tree_selector(
+            output << tree_selector(
               form,
               {
                 :restricted_by  => ( user.restricted? ) ? user : nil,
@@ -913,31 +930,32 @@ HTML
       # with relevant messages included in the HTML output.
       #
       when :user_permitted_issue_list
-        return '' if ( @current_user.restricted? ) # Privileged users only!
+        return '' if ( !User.current.admin? ) # Privileged users only!
 
         if ( issue.active.count.zero? )
 
           output << "There are no issues currently defined. Please\n"
-          output << "#{ link_to( 'create at least one', new_issue_path() ) }."
+          output << "#{ link_to( 'create at least one', url_for(:controllers => 'issues', :action => 'new' ) ) }."
 
         else
 
-          if ( session[ :javascript ].nil? )
-            issues = issue.active()
+# TODO - detect browser javascript
+          if ( false )
+            issues = Issue.default
             issue.sort_by_augmented_title( issues )
-            output << apphelp_collection_select( form, :issue_ids, issues, :id, :augmented_title )
+            output << collection_select( form, :issue_ids, issues, :id, :augmented_title )
           else
 
             # Don't use "user.[foo_]permitted_issues" here as we *want* an empty
             # list for privileged accounts where no issues have been set up.
 
-            output << issuehelp_tree_selector(
+            output << tree_selector(
               form,
-              { :selected_issues => user.issues }
+              { :selected_issues => Issue.default }
             )
           end
 
-          if ( user.admin? )
+          if ( User.current.admin? )
             output << "\n\n"
             output << "<p>\n"
             output << "  This list is only enforced for users with a\n"

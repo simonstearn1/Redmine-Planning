@@ -2,6 +2,16 @@ class TimesheetsController < ApplicationController
   
   unloadable
   
+  # YUI tree component for task selection
+
+  dynamic_actions = { :only => [ :edit, :update ] }
+
+  uses_leightbox( dynamic_actions )
+  uses_yui_tree(
+    { :xhr_url_method => :trees_path  },
+    dynamic_actions
+  )
+
   # List timesheets.
 
   def index

@@ -3,35 +3,30 @@
     <head>
         <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 
+         <!-- You may have yours, but I have mine... !></!-->
         <%= javascript_include_tag "prototype", :plugin => 'redmine_planning' %>
         <%= javascript_include_tag "scriptaculous", :plugin => 'redmine_planning' %>
         <%= javascript_include_tag "effects", :plugin => 'redmine_planning' %>
         <%= javascript_include_tag "controls", :plugin => 'redmine_planning' %>
 
-        <%= javascript_include_tag 'leightbox/leightbox.js', :plugin => "redmine_planning" %>
-        <%= stylesheet_link_tag 'leightbox/leightbox.css', :plugin => "redmine_planning" %>
+        <%= javascript_include_tag "leightbox/leightbox.js", :plugin => 'redmine_planning' %>
+        <%= stylesheet_link_tag "leightbox/leightbox.css", :plugin => 'redmine_planning' %>
 
-        <%= stylesheet_link_tag 'yui/2.7.0/build/treeview/assets/treeview-skin.css', :plugin => "redmine_planning" %>
-        <%= javascript_include_tag 'yui/2.7.0/build/yahoo-dom-event/yahoo-dom-event.js', :plugin => "redmine_planning" %>
-        <%= javascript_include_tag 'yui/2.7.0/build/element/element-min.js', :plugin => "redmine_planning" %>
-        <%= javascript_include_tag 'yui/2.7.0/build/connection/connection-min.js', :plugin => "redmine_planning" %>
-        <%= javascript_include_tag 'yui/2.7.0/build/treeview/treeview-min.js', :plugin => "redmine_planning" %>
-
-
-        <%= javascript_include_tag 'yui_tree/yui_tree_support.js', :plugin => "redmine_planning" %>
-        
-        <%= javascript_include_tag( "safe_in_place_editing/safe_in_place_editing", :plugin => "redmine_planning" ) %>
+        <%= stylesheet_link_tag "yui/2.7.0/build/treeview/assets/treeview-skin.css", :plugin => 'redmine_planning' %>
+        <%= javascript_include_tag "yui/2.7.0/build/yahoo-dom-event/yahoo-dom-event.js", :plugin => 'redmine_planning' %>
+        <%= javascript_include_tag "yui/2.7.0/build/element/element-min.js", :plugin => 'redmine_planning' %>
+        <%= javascript_include_tag "yui/2.7.0/build/connection/connection-min.js", :plugin => 'redmine_planning' %>
+        <%= javascript_include_tag "yui/2.7.0/build/treeview/treeview-min.js", :plugin => 'redmine_planning' %>
+        <%= javascript_include_tag "yui_tree/yui_tree_support.js", :plugin => 'redmine_planning' %>
 
         <%   if ( action_name == 'show' ) -%>
-          <%= javascript_include_tag( 'trackrecord/timesheet_viewer', :plugin => "redmine_planning"  ) %>
+          <%= javascript_include_tag( "trackrecord/timesheet_viewer", :plugin => 'redmine_planning'  ) %>
         <%   elsif ( action_name != 'index' ) -%>
-          <%= javascript_include_tag( 'trackrecord/timesheet_editor', :plugin => "redmine_planning"  ) %>
-          <%= javascript_include_tag( 'trackrecord/check_box_toggler', :plugin => "redmine_planning" ) %>
+          <%= javascript_include_tag( "trackrecord/timesheet_editor", :plugin => 'redmine_planning'  ) %>
+          <%= javascript_include_tag( "trackrecord/check_box_toggler", :plugin => 'redmine_planning' ) %>
         <%   end -%>
-        <%= stylesheet_link_tag 'redmine_planning.css', :plugin => "redmine_planning" %>
-
-        
-
+        <%= stylesheet_link_tag "redmine_planning.css", :plugin => 'redmine_planning' %>
+       
         <!-- ... --><title><%=h html_title %></title>
         <meta name="description" content="<%= Redmine::Info.app_name %>" />
         <meta name="keywords" content="issue,bug,tracker" />
