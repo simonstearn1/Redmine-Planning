@@ -1,13 +1,13 @@
     <tr align="center" class="ts_show_row <%= cycle( 'even', 'odd' ) %>">
-      <td align="left" class="ts_show_task">
-        <%= h( @timesheet_row.task.title ) %>
+      <td align="left" class="ts_show_issue">
+        <%= h( @timesheet_row.issue.subject ) %>
       </td>
 
 <% TimesheetRow::DAY_ORDER.each do | day_number |
-   @work_packet = TimeEntry.find_by_timesheet_row_id( @timesheet_row.id, :conditions => { :day_number => day_number } )
+   @time_entry = TimeEntry.find_by_timesheet_row_id( @timesheet_row.id, :conditions => { :day_number => day_number } )
 -%>
       <td class="ts_show_work">
-<%= render( :partial => 'work_packets/show.html.erb' ) %>
+<%= render( :partial => 'time_entries/show.html.erb' ) %>
       </td>
 <% end -%>
 

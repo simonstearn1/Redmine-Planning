@@ -1,0 +1,397 @@
+/************************************************************************\
+ * File:    redmine_planning.css                                         *
+ *                                                                      *
+ * Purpose: Lightly modded version from track record to support new     *
+ * formatting, but hopefully preserve application stuff for redmine.    *
+ *                                                                      * 
+\************************************************************************/
+
+/* List views */
+
+div#main_page_content{
+}
+
+div.list_titles {
+}
+
+div.list_create {
+  float: right;
+}
+
+div.list_titles h1,
+div.list_create h1 {
+}
+
+table.list, p.list_empty {
+  clear: both;
+}
+
+table.list td, table.list th {
+  padding-left: 4px;
+  padding-right: 4px;
+  font-size: 95%;
+}
+
+table.list td.navigation {
+  padding: 2px 0;
+}
+
+table.list td.list_actions {
+  padding-left: 10px;
+  padding-right: 10px;
+  text-align: right;
+}
+
+table.list tr.odd td.list_actions {
+  background: #fee;
+}
+
+table.list tr.even td.list_actions {
+  background: #fdd;
+}
+
+table.list td.list_actions a {
+  color: black;
+}
+
+table.list td.list_actions a:hover {
+  color: white;
+}
+
+table.list form {
+  margin: 0;
+  padding: 0;
+}
+
+table.list th.sorted_column_asc {
+  background: #686;
+}
+
+table.list th.sorted_column_desc {
+  background: #866;
+}
+
+table.list th.sorted_column_asc a:before {
+  content: url( /plugin_assets/redmine_planning/images/up.png );
+}
+
+table.list th.sorted_column_desc a:before {
+  content: url( /plugin_assets/redmine_planning/images/down.png );
+}
+
+/* In-place editors */
+
+form.inplaceeditor-form {
+  position: absolute;
+  background: white;
+  border: 2px solid #888;
+  text-align: center;
+}
+
+form.inplaceeditor-form input[ type="text" ] {
+  margin: 5px;
+  width: 90%;
+}
+
+form.inplaceeditor-form input[ type="submit" ] {
+  margin: 5px;
+  float: left;
+}
+
+form.inplaceeditor-form a {
+  margin: 5px;
+  float: right;
+}
+
+form.inplaceeditor-form select {
+  margin: 5px;
+  float: left;
+}
+
+/* Rows in general tables */
+
+tr.info {
+  background: url( /plugin_assets/redmine_planning/images/table_header.png ) top left repeat-x;
+  color: #fff;
+  white-space: nowrap;
+}
+
+tr.info th {
+  background: url( /plugin_assets/redmine_planning/images/table_header.png ) top left repeat-x;
+  font-weight: normal;
+}
+
+tr.info th a {
+  color: white;
+}
+
+tr.odd {
+  background: #eee;
+}
+
+tr.even {
+  background: #ddd;
+}
+
+tr.odd .total {
+  background: #cec;
+}
+
+tr.even .total {
+  background: #bdb;
+}
+
+tr.odd .overall_total {
+  background: #040;
+  color: #0f0;
+}
+
+tr.even .overall_total {
+  background: #030;
+  color: #0e0;
+}
+
+/* Audit changes table */
+
+table.audit_changes,
+.active-scaffold table.audit_changes {
+  color: #000;
+  font-size: 80%;
+  border: 1px solid #aaa;
+  padding: 0;
+  margin: 2px 0;
+}
+
+table.audit_changes tr,
+.active-scaffold table.audit_changes tr {
+  border: none;
+  padding: 0;
+}
+
+table.audit_changes td,
+table.audit_changes th,
+.active-scaffold table.audit_changes td,
+.active-scaffold table.audit_changes th {
+  border: none;
+  color: #000;
+  text-align: left;
+  padding: 1px;
+}
+
+table.audit_changes th,
+.active-scaffold table.audit_changes th {
+  background: #aaa;
+}
+
+/* Report pages */
+
+div.report table {
+  font-size: 80%;
+}
+
+h3.report {
+  padding: 4px;
+  background: #ddd;
+}
+
+h4.report {
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #888;
+}
+
+div.report img {
+  margin-right: 10px;
+  border: 1px dashed #888;
+}
+
+/* Timesheet year overview chart - see year_chart */
+
+table.timesheet_chart {
+  border: none;
+  border-collapse: collapse;
+  margin-bottom: 5px;
+}
+
+table.timesheet_chart tr td {
+  border-left: 1px solid #444;
+}
+
+table.timesheet_chart tr td:first-child {
+  border-left: none;
+}
+
+table.timesheet_chart tr.last {
+  border-bottom: 1px solid #444;
+}
+
+table.timesheet_chart th {
+  font-weight: normal;
+  background: url( /plugin_assets/redmine_planning/images/table_header.png ) top left repeat-x;
+  color: #fff;
+}
+
+table.timesheet_chart td.committed {
+  background: #7c7;
+}
+
+table.timesheet_chart td.not_committed {
+  background: #fa7;
+}
+
+table.timesheet_chart td.timesheet_chart_month {
+  font-weight: bold;
+  padding-right: 20px;
+}
+
+table.timesheet_chart a {
+  text-decoration: none;
+}
+
+table.timesheet_chart a:visited {
+  color: black;
+}
+
+table.timesheet_chart a:hover {
+  color: white;
+}
+
+table.timesheet_chart form, table.timesheet_chart div {
+  margin: 0;
+  padding: 0;
+}
+
+/* Timesheet editor and display grids */
+
+table.ts_edit_table,
+table.ts_show_table {
+  border-collapse: collapse;
+}
+
+table.ts_edit_table th,
+table.ts_show_table th {
+  padding: 2px;
+}
+
+table.ts_edit_table td,
+table.ts_show_table td {
+  padding: 0;
+}
+
+table.ts_edit_table td.ts_edit_task,
+table.ts_show_table td.ts_show_task {
+  padding: 0 2px;
+}
+
+td.ts_edit_work {
+  border: 1px solid #888;
+  background: white;
+}
+
+td.ts_show_work {
+  border: 1px solid #aaa;
+  background: #f5f5f5;
+  color: #444;
+}
+
+td.ts_edit_work input {
+  border: none;
+  width: 90%;
+  height: 100%;
+  text-align: center;
+}
+
+th.ts_edit_heading,
+th.ts_show_heading {
+  padding: 2px;
+  font-size: 90%;
+}
+
+table.ts_edit_table .total,
+table.ts_show_table .total {
+  padding: 0 2px;
+}
+
+table.ts_edit_table .overall_total,
+table.ts_show_table .overall_total {
+  padding: 2px;
+}
+
+table.ts_edit_table tr.group_gap td,
+table.ts_show_table tr.group_gap td,
+table.ts_edit_table tr.group_gap th,
+table.ts_show_table tr.group_gap th {
+  padding: 0;
+  margin: 0;
+  height: 3px;
+}
+
+/* Committed / not committed timesheet labels; active / not active
+ * items; overrunning / not overrunning labels.
+ */
+
+span.timesheet_not_committed {
+  color: #a50;
+}
+
+span.timesheet_committed, span.item_active, span.no_overrun {
+  color: #080;
+}
+
+
+span.item_inactive, span.overrun, span.dup {
+  color: #800;
+}
+
+span.overrun {
+  font-weight: bold;
+}
+
+/* Table cells carrying totals with italic or bold content are
+ * indicating a problem with the total (see timesheet_editor.js).
+ */
+
+td.total b, td.total i {
+  color: #800;
+}
+
+/* Task indicators - billable / not billable, active / inactive */
+
+.task_billable {
+}
+
+.task_not_billable {
+  color: #59f;
+}
+
+.task_active {
+}
+
+.task_inactive {
+  text-decoration: line-through;
+}
+
+/* General YUI tree view settings */
+
+div.yui-tree-container {
+  border: 1px solid #ccc;
+  padding: 0 5px 3px 5px;
+}
+
+textarea.tree_selector_text {
+  margin: 0;
+  padding: 2px;
+}
+
+/* Fix some odd styles in the default YUI TreeView CSS */
+
+.ygtv-checkbox .ygtv-highlight0 .ygtvcontent,
+.ygtv-checkbox .ygtv-highlight1 .ygtvcontent,
+.ygtv-checkbox .ygtv-highlight2 .ygtvcontent {
+  padding-left: 17px; /* Check box image is 16px wide with some built-in padding and text labels rarely precisely abut their left edge due to the shapes of characters and anti-aliasing; default '1em' leaves check box too close to text for my liking */
+}
+
+/* Leightbox links */
+
+a.lbOn {
+  font-size: 90%;
+}

@@ -40,7 +40,7 @@ class TimesheetsController < ApplicationController
       else
         search_num     = params[ :search ].to_i
         search_str     = "%#{ params[ :search ] }%" # SQL wildcards either side of the search string
-        conditions_sql = "AND ( timesheets.year = :search_num OR timesheets.week_number = :search_num OR users.name ILIKE :search_str )"
+        conditions_sql = "AND ( timesheets.year = :search_num OR timesheets.week_number = :search_num OR LOWER(CONCAT(users.firstname, ' ', users.lastname)) LIKE lower(:search_str) )"
         vars           = { :search_num => search_num, :search_str => search_str }
 
         user_conditions_sql  << conditions_sql

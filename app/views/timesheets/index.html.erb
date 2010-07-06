@@ -1,10 +1,10 @@
       <div class="list_titles">
-        <h1><%= params[ :search ] ? 'Search results' : 'Manage timesheets' %></h1>
-        <h2>Your timesheets</h2>
+        <h2><%= params[ :search ] ? 'Search results' : 'Manage timesheets' %></h2>
+        <h3>Your timesheets</h3>
       </div>
       <div class="list_create">
         <h1>&nbsp;</h1>
-        <h2><%= link_to( "Create new timesheet", { :controller => 'timesheets', :action => :new } ) %></h2>
+        <h2><%= link_to( "Change or create timesheets", { :controller => 'timesheets', :action => :new } ) %></h2>
       </div>
 
       <h3 style="clear: both"><%= commit_label( nil, false ) %></h3>

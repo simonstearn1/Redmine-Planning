@@ -220,7 +220,7 @@
   </table>
 
   <p align="center">
-    <%= link_to( 'Cancel and show overview', url_for (:controller => 'timesheets', :action => 'index' )) %> or
-    <%= link_to( 'cancel and show timesheet', url_for (:controller => 'timesheets', :action => 'show', :id => @timesheet.id ) ) %>
+    <%= link_to( 'Cancel and show overview', url_for( :controller => 'timesheets', :action => 'new' )) %> or
+    <%= link_to( 'cancel and show timesheet', url_for (:controller => 'timesheets', :action => 'show', :id => @timesheet.id )) %>
   </p>
 <% end -%></div>
