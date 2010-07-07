@@ -596,21 +596,33 @@ module TimesheetsHelper
 #   end
 
     # Maybe more rules here..
-    permitted_issues = Timesheet.default_issues
+    #
+    # included issues set to all visible activity issues
+    #
+#    permitted_issues = Timesheet.default_issues
 
-    unless ( included_issues.nil? )
-      if ( permitted_issues.nil? )
+#    unless ( included_issues.nil? )
+#      if ( permitted_issues.nil? )
         permitted_issues  = included_issues
-      else
-        permitted_issues &= included_issues
-      end
-    end
+#      else
+#        permitted_issues &= included_issues
+#      end
+#    end
 
     root_projects  = permitted_issues.map { | issue    | issue.project     }.uniq
     root_customers = root_projects.reject { | project | !project.parent_id.nil? }.uniq
+
+ 
+    root_projects.each do | project |
+      if project.parent_id && !root_customers.any?{ |root | root.id == project.parent_id }
+        root_customers << project
+      end
+    end
+    
     root_projects.reject! { | project | project.parent_id.nil? }
-
-
+    if root_customers
+      root_customers.sort!{|a, b| a.name <=> b.name }
+    end
     # Now take the selected issue list and do something similar to get at the
     # selected project and customer IDs so we can build a complete list of the
     # node IDs to be initially expanded and checked in the YUI tree. The
@@ -639,18 +651,8 @@ module TimesheetsHelper
       {
         :label  => customer.name,
         :isLeaf => false,
-        :id     => "#{ customer.identifier }"
+        :id     => "#{ customer.id }"
       }
-    end
-    
-    if roots.nil? || roots.empty?
-      roots = root_projects.map do | project |
-        {
-          :label  => project.name,
-          :isLeaf => false,
-          :id     => "#{ project.identifier }"
-        }
-      end
     end
 
 
