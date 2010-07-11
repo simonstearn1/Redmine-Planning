@@ -6,7 +6,7 @@
 #          See controllers/loader_controller.rb for more.              #
 #                                                                      #
 # History: 04-Jan-2008 (ADH): Created.                                 #
-#          Feb 2009 (SJS): Hacked into plugin for redmine              #
+#    Feb 2009 / June 2010 (SJS): Hacked into plugin for redmine, twice #
 ########################################################################
 
 module LoaderHelper

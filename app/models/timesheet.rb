@@ -45,7 +45,7 @@ class Timesheet < ActiveRecord::Base
   # Return a range of years allowed for a timesheet
 
   def self.time_range
-    ( Date.current.year - 5 )..( Date.current.year + 2 )
+    ( Date.current.year - 10 )..( Date.current.year + 2 )
   end
 
   # Make sure the data is sane.

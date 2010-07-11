@@ -1,12 +1,3 @@
-########################################################################
-# File:    timesheet_row.rb                                            #
-#          Hipposoft 2008                                              #
-#                                                                      #
-# Purpose: Describe the behaviour of Timesheet Row objects. See below  #
-#          for more details.                                           #
-#                                                                      #
-# History: 07-Jan-2008 (ADH): Created.                                 #
-########################################################################
 
 class TimesheetRow < ActiveRecord::Base
 
@@ -33,9 +24,7 @@ class TimesheetRow < ActiveRecord::Base
 
   def issue_is_active_and_permitted()
 
-    unless ( User.current.admin? )
-      errors.add_to_base( 'Inclusion of this issue is not permitted' ) unless self.issue.visible?(User.current)
-    end
+
   end
 
   # Create Work Packet objects after saving, if not already
