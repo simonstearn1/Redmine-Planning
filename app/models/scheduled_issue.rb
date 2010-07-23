@@ -42,7 +42,23 @@ class ScheduledIssue < ActiveRecord::Base
 
     return issue;
   end
+  #
+  # Check if there are actuals for given
+  # user/date/project
+  #
+  def ScheduledIssue.actual?(user_id, project_id, date)
+    sched_issue = ScheduledIssue.find_all_by_user_id_and_project_id_and_date(user_id, project_id, date);
 
+    if(sched_issue.nil? || sched_issue.empty?)
+      return false;
+    else
+      sched_issue.each do |s_issue|
+        return false if(s_issue.actual == 0 || s_issue.actual.nil? )
+      end
+      
+      return true;
+    end
+  end
   #
   # Check if there are any scheduled issue for given
   # user/date/project, don't include empty hours
@@ -54,7 +70,7 @@ class ScheduledIssue < ActiveRecord::Base
       return true;
     else
       sched_issue.each do |s_issue|
-        return false if(s_issue.issue_id != 0)
+        return false if(s_issue.issue_id == 1)
       end
       
       return true;

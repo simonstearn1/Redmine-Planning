@@ -674,8 +674,7 @@ class LoaderController < ApplicationController
     scheduled_issues.sort! { |a, b| a.date <=> b.date }
     while (hours > 0)
       oldest_entry = scheduled_issues.pop
-      return false if oldest_entry.nil?
-      
+      return false if oldest_entry.nil? || oldest_entry.actual == true
       if hours >= oldest_entry.scheduled_hours
         hours -= oldest_entry.scheduled_hours
         sacrifice_project_time(user_id, oldest_entry.project_id, oldest_entry.date, hours)

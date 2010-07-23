@@ -6,7 +6,7 @@ module IssueSchedulePatch
     # Same as typing in the class
     base.class_eval do
       unloadable # Send unloadable so it will not be unloaded in development
-      has_many :schedule_registry, :dependent => :destroy, :class_name => 'ScheduledIssue', :foreign_key => 'issue_id'
+      has_many :schedule_registry, :dependent => :destroy, :class_name => 'ScheduledIssue', :foreign_key => 'issue_id', :conditions => "actual != 1"
     end
   end
 end

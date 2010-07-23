@@ -1,4 +1,7 @@
 require_dependency 'time_entry'
+require_dependency 'schedule_entry'
+require_dependency 'scheduled_issue'
+
 
 # Patch Redmine's time_entries to associate with timesheet_rows etc.  
 
@@ -32,6 +35,7 @@ module TimeEntryPlanningPatch
       # more legible and maintainable.
 
       before_validation( :set_date )
+      after_save ( :fudge_scheduled_issues )
     
     end
 
@@ -48,10 +52,10 @@ module TimeEntryPlanningPatch
     else
       new_date = Time.current
     end
-    self.tyear = new_date.year
-    self.tweek = new_date.cweek
-    self.tmonth = new_date.month
-    self.spent_on = new_date
+    self.tyear = new_date.year unless self.tyear
+    self.tweek = new_date.cweek unless self.tweek
+    self.tmonth = new_date.month unless self.tmonth
+    self.spent_on = new_date unless self.spent_on
   end
 
   # Find time entrys in rows related to the given issue ID, held in timesheets
@@ -204,7 +208,66 @@ module TimeEntryPlanningPatch
     end
   end
 
-
+  # fudge_scheduled_issues
+  #
+  # Correct schedule based on actuals entered so that historic review of schedule is accurate
+  #
+  def fudge_scheduled_issues
+    
+    
+    # begin a transaction
+    ScheduledIssue.transaction do
+      todays_actuals = []
+      # find scheduled_issues for same day / user and delete them unless actual
+      todays_scheduled_issues = ScheduledIssue.find(:all, :conditions => ['date = ? AND user_id = ?', self.spent_on, self.user_id])
+      todays_scheduled_issues.each do | scheduled_issue |
+        if scheduled_issue.actual == 1
+          todays_actuals << scheduled_issue
+        else
+          scheduled_issue.destroy 
+        end
+      end
+      
+      # create new scheduled_issue representing actual work done
+      new_actual = ScheduledIssue.new
+      new_actual.issue_id = self.issue_id
+      new_actual.project_id = self.project_id
+      new_actual.user_id = self.user_id
+      new_actual.scheduled_hours = self.hours
+      new_actual.date = self.spent_on
+      new_actual.actual = 1
+      new_actual.save
+      todays_actuals << new_actual
+      
+      # Sum actual hours for the day
+      hours = 0
+      todays_actuals.each do |actual|
+        hours += actual.scheduled_hours if actual.project_id == self.project_id
+      end
+      
+      # fixup or create schedule_entries for this day
+      schedule_entries = ScheduleEntry.find(:all, :conditions => ['user_id = ? AND date = ? AND project_id = ?', self.user_id, self.spent_on, self.project_id])
+      schedule_entry = schedule_entries.shift unless schedule_entries.nil?
+      if schedule_entry.nil?
+        schedule_entry = ScheduleEntry.new
+      end
+      unless schedule_entries.nil? || schedule_entries.empty?
+        schedule_entries.each do | entry |
+          entry.destroy
+        end
+      end
+      
+      schedule_entry.hours = hours
+      schedule_entry.user_id = self.user_id
+      schedule_entry.project_id = self.project_id
+      schedule_entry.date = self.spent_on
+      schedule_entry.save
+      
+    
+    # commit
+    end
+    
+  end
 
   end    
 end

@@ -300,7 +300,7 @@ class SchedulesController < ApplicationController
             sched_issue.scheduled_hours = value.to_f;
           end
           
-          issue.assigned_to = User.find(user_id);
+          #issue.assigned_to = User.find(user_id);
           issue.save;
           sum += value.to_f;
           sched_issue.save;
