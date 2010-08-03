@@ -221,6 +221,11 @@ module TimeEntryPlanningPatch
       # find scheduled_issues for same day / user and delete them unless actual
       todays_scheduled_issues = ScheduledIssue.find(:all, :conditions => ['date = ? AND user_id = ?', self.spent_on, self.user_id])
       todays_scheduled_issues.each do | scheduled_issue |
+        if scheduled_issue.issue_id == self.issue_id && scheduled_issue.project_id == self.project_id && scheduled_issue.scheduled_hours == self.hours
+            scheduled_issue.actual = 1
+            scheduled_issue.save
+            return
+        end
         if scheduled_issue.actual == 1
           todays_actuals << scheduled_issue
         else
