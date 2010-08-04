@@ -218,13 +218,15 @@ module TimeEntryPlanningPatch
     # begin a transaction
     ScheduledIssue.transaction do
       todays_actuals = []
+      hours = self.hours
+
       # find scheduled_issues for same day / user and delete them unless actual
       todays_scheduled_issues = ScheduledIssue.find(:all, :conditions => ['date = ? AND user_id = ?', self.spent_on, self.user_id])
       todays_scheduled_issues.each do | scheduled_issue |
         if scheduled_issue.issue_id == self.issue_id && scheduled_issue.project_id == self.project_id && scheduled_issue.scheduled_hours == self.hours
-            scheduled_issue.actual = 1
-            scheduled_issue.save
-            return
+          scheduled_issue.actual = 1
+          scheduled_issue.save
+	  hours = 0
         end
         if scheduled_issue.actual == 1
           todays_actuals << scheduled_issue
@@ -233,19 +235,21 @@ module TimeEntryPlanningPatch
         end
       end
       
-      # create new scheduled_issue representing actual work done
-      new_actual = ScheduledIssue.new
-      new_actual.issue_id = self.issue_id
-      new_actual.project_id = self.project_id
-      new_actual.user_id = self.user_id
-      new_actual.scheduled_hours = self.hours
-      new_actual.date = self.spent_on
-      new_actual.actual = 1
-      new_actual.save
-      todays_actuals << new_actual
-      
-      # Sum actual hours for the day
+      unless hours == 0
+        # create new scheduled_issue representing actual work done
+        new_actual = ScheduledIssue.new
+        new_actual.issue_id = self.issue_id
+        new_actual.project_id = self.project_id
+        new_actual.user_id = self.user_id
+        new_actual.scheduled_hours = self.hours
+        new_actual.date = self.spent_on
+        new_actual.actual = 1
+        new_actual.save
+        todays_actuals << new_actual
+      end
+
       hours = 0
+      # Sum actual hours for the day
       todays_actuals.each do |actual|
         hours += actual.scheduled_hours if actual.project_id == self.project_id
       end
@@ -253,7 +257,7 @@ module TimeEntryPlanningPatch
       # fixup or create schedule_entries for this day
       schedule_entries = ScheduleEntry.find(:all, :conditions => ['user_id = ? AND date = ? AND project_id = ?', self.user_id, self.spent_on, self.project_id])
       schedule_entry = schedule_entries.shift unless schedule_entries.nil?
-      if schedule_entry.nil?
+      if schedule_entry.nil? && hours > 0
         schedule_entry = ScheduleEntry.new
       end
       unless schedule_entries.nil? || schedule_entries.empty?
@@ -262,11 +266,13 @@ module TimeEntryPlanningPatch
         end
       end
       
-      schedule_entry.hours = hours
-      schedule_entry.user_id = self.user_id
-      schedule_entry.project_id = self.project_id
-      schedule_entry.date = self.spent_on
-      schedule_entry.save
+      if hours > 0
+        schedule_entry.hours = hours
+        schedule_entry.user_id = self.user_id
+        schedule_entry.project_id = self.project_id
+        schedule_entry.date = self.spent_on
+        schedule_entry.save
+      end
       
     
     # commit
