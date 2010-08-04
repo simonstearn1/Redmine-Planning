@@ -45,4 +45,6 @@ Redmine::Plugin.register :redmine_planning do
 	menu :top_menu, :timesheets, { :controller => 'timesheets', :action => 'index'}, :after => :projects, :caption => 'Timesheets', :if => Proc.new { User.current.allowed_to?(:timesheet, nil, :global => true) }
 	menu :project_menu, :schedules, { :controller => 'schedules', :action => 'index' }, :caption => :label_schedules_index, :after => :activity, :param => :project_id
 
+  # Scheduled Issues are added to the activity view
+  activity_provider :schedules, :class_name => 'ScheduledIssue', :default => true
 end

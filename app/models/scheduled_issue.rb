@@ -2,11 +2,27 @@ class ScheduledIssue < ActiveRecord::Base
   belongs_to :issue
   belongs_to :user
   belongs_to :project
+  # The author is just last user to save
+  belongs_to :author, :class_name => 'User', :foreign_key => 'author_id'
+  
+  acts_as_event :title => Proc.new {|o| "#{o.title}"},
+                :description => Proc.new {|o| "Schedule Entry"},
+                :datetime => :updated_at,
+                :author => :author,
+                :url => Proc.new {|o| {:controller => 'Schedules', :action => 'index', :date => "#{o.date}"}}
+                
+  acts_as_activity_provider :type => 'schedules',
+                            :find_options => { :include => [:project, :author] },
+                            :author_key => :author_id,
+                            :timestamp => :updated_at
+  
   acts_as_audited( :except => [ :lock_version, :updated_at, :created_at, :id ] )
 
 #  before_destroy :before_i_die
 
-
+  def before_save
+    self.author_id = User.current.id
+  end
   #
   # If we get deleted when issue is deleted, make sure we also tidy up the parent schedule_entry
   def before_i_die
@@ -25,6 +41,12 @@ class ScheduledIssue < ActiveRecord::Base
     
   end
 
+  def title
+    user = User.find_by_id(self.user_id)
+    project = Project.find_by_id(self.project_id)
+    
+    "#{user.firstname} #{user.lastname} scheduled to work on #{project.name} on #{self.date}"
+  end
 
   # # Compute total time scheduled on issue
   #   connected with this object
