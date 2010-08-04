@@ -39,7 +39,7 @@ schedHours = ScheduledIssue.hours(entry.user.id, entry.project.id, entry.date)
                                            :users => @users},
                                       :with => "'new_date='+$F(this)",
 									                    :before => "Element.show('ajax-indicator')",
-									                    :complete => "Element.hide('ajax-indicator')" ) )%>
+									                    :complete => "Element.hide('ajax-indicator')" ))%>
 									 
 	   	<%= link_to_remote( 
 		      image_tag('application_split.png', :title => "Chop up this entry", :plugin => 'redmine_planning'),
